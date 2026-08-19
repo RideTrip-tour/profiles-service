@@ -16,6 +16,11 @@ class ProfileBase(BaseModel):
         default_factory=list,
         description="External activity identifiers from activities service",
     )
+    favorite_location_ids: list[int] = Field(
+        default_factory=list,
+        description="List of location IDs marked as favorite",
+        exclude=True,
+    )
     country: Optional[str] = None
     city: Optional[str] = None
     citizenship: Optional[str] = None
@@ -38,5 +43,6 @@ class ProfileResponse(ProfileBase):
     id: int
     user_id: int
     role: str
+    favorite_location_ids: list[int] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime

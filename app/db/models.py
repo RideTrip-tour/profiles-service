@@ -39,6 +39,12 @@ class Profile(Base):
         server_default=text("'user'"),
     )
     avatar_url: Mapped[Optional[str]] = mapped_column(String)
+    favorite_location_ids: Mapped[list[int]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=list,
+        server_default=text("'[]'::json"),
+    )
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         server_default=func.now(), onupdate=func.now()

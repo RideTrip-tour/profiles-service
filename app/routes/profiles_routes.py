@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, status, Depends, Request, HTTPException
+from fastapi import APIRouter, status, Depends, Request, HTTPException, Query
 
 from app.schemas.profiles_schemas import ProfileCreate, ProfileResponse, ProfileUpdate
 from app.dependencies.auth import get_current_user_id
@@ -61,3 +61,61 @@ async def delete_profile_by_id(
 ):
     await manager.delete_profile_by_user_id(get_current_user_id(request))
     return None
+
+
+@router.get("/me/favorite_locations", response_model=list[int])
+async def get_favorite_locations(
+    request: Request,
+    manager: ProfileManager = Depends(get_profile_manager),
+) -> list[int]:
+    user_id = get_current_user_id(request)
+    profile = await manager.get_profile_by_user_id(user_id)
+    return profile["favorite_location_ids"]
+
+
+@router.post(
+    "/me/favorite_locations",
+    status_code=status.HTTP_200_OK,
+    response_model=list[int],
+)
+async def add_favorite_locations(
+    payload: list[int],
+    request: Request,
+    manager: ProfileManager = Depends(get_profile_manager),
+) -> list[int]:
+    user_id = get_current_user_id(request)
+    profile = await manager.get_profile_by_user_id(user_id)
+
+    existing = set(profile["favorite_location_ids"])
+    new_ids = set(payload)
+    profile["favorite_location_ids"] = list(existing | new_ids)
+
+    updated = await manager.update_profile_by_user_id(
+        user_id,
+        ProfileUpdate(favorite_location_ids=profile["favorite_location_ids"]),
+    )
+    return updated["favorite_location_ids"]
+
+
+@router.delete(
+    "/me/favorite_locations",
+    status_code=status.HTTP_200_OK,
+    response_model=list[int],
+)
+async def remove_favorite_locations(
+    request: Request,
+    ids: list[int] = Query(...),
+    manager: ProfileManager = Depends(get_profile_manager),
+) -> list[int]:
+    user_id = get_current_user_id(request)
+    profile = await manager.get_profile_by_user_id(user_id)
+
+    existing = set(profile["favorite_location_ids"])
+    to_remove = set(ids)
+    profile["favorite_location_ids"] = list(existing - to_remove)
+
+    updated = await manager.update_profile_by_user_id(
+        user_id,
+        ProfileUpdate(favorite_location_ids=profile["favorite_location_ids"]),
+    )
+    return updated["favorite_location_ids"]

@@ -129,3 +129,66 @@ async def test_delete_profile_by_id_returns_no_content_for_owner(
     assert response.status_code == status.HTTP_204_NO_CONTENT
     assert response.content == b""
     assert manager.calls == [("delete_profile_by_user_id", 7)]
+
+
+@pytest.mark.asyncio
+async def test_get_favorite_locations(
+    client,
+    override_manager,
+    monkeypatch,
+):
+    manager = override_manager(StubProfileManager())
+    monkeypatch.setattr(
+        "app.routes.profiles_routes.get_current_user_id",
+        lambda _: 7,
+    )
+    manager.profile["favorite_location_ids"] = [101, 202, 303]
+
+    response = await client.get("/api/profile/me/favorite_locations")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == [101, 202, 303]
+
+
+@pytest.mark.asyncio
+async def test_add_favorite_locations(
+    client,
+    override_manager,
+    monkeypatch,
+):
+    manager = override_manager(StubProfileManager())
+    monkeypatch.setattr(
+        "app.routes.profiles_routes.get_current_user_id",
+        lambda _: 7,
+    )
+    manager.profile["favorite_location_ids"] = [101, 202]
+
+    response = await client.post(
+        "/api/profile/me/favorite_locations",
+        json=[303, 404],
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert sorted(response.json()) == [101, 202, 303, 404]
+
+
+@pytest.mark.asyncio
+async def test_remove_favorite_locations(
+    client,
+    override_manager,
+    monkeypatch,
+):
+    manager = override_manager(StubProfileManager())
+    monkeypatch.setattr(
+        "app.routes.profiles_routes.get_current_user_id",
+        lambda _: 7,
+    )
+    manager.profile["favorite_location_ids"] = [101, 202, 303]
+
+    response = await client.delete(
+        "/api/profile/me/favorite_locations",
+        params={"ids": [101, 303]},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == [202]
