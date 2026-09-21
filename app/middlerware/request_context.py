@@ -94,7 +94,7 @@ async def _register_device(
 
 
 def _is_profile_context_excluded(path: str) -> bool:
-    logger.info('Path for check: %s', path)
+    logger.info("Path for check: %s", path)
     return path == "/api/profile/create" or path.startswith("/api/admin/profile/")
 
 
