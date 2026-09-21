@@ -94,7 +94,8 @@ async def _register_device(
 
 
 def _is_profile_context_excluded(path: str) -> bool:
-    return path == "/api/profile/create/" or path.startswith("/api/admin/profile/")
+    logger.info("Path for check: %s", path)
+    return path == "/api/profile/create" or path.startswith("/api/admin/profile/")
 
 
 async def user_context_middleware(request: Request, call_next):
@@ -113,7 +114,7 @@ async def user_context_middleware(request: Request, call_next):
             )
             if user_id is None:
                 logger.warning("Unable to resolve user_id from request headers")
-                return _unauthorized_response()
+                return _unauthorized_response(detail="User not identified")
             request.state.user["id"] = user_id
     response = await call_next(request)
     return response
