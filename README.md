@@ -1,3 +1,5 @@
+[![CI Dev](https://github.com/RideTrip-tour/profiles-service/actions/workflows/ci-dev.yml/badge.svg)](https://github.com/RideTrip-tour/profiles-service/actions/workflows/ci-dev.yml)
+
 # Profile Service
 
 Сервис управления профилями пользователей на `FastAPI` и `SQLAlchemy Async`.
@@ -90,7 +92,7 @@ venv/bin/uvicorn main:app --reload
   "first_name": "Ivan",
   "last_name": "Petrov",
   "phone_number": "+79990000000",
-  "age": 30,
+  "birth_date": "2000-01-23",
   "about_me": "Люблю путешествия",
   "activities": ["ski", "hiking"],
   "country": "Russia",
@@ -169,7 +171,7 @@ venv/bin/uvicorn main:app --reload
   "first_name": "Ivan",
   "last_name": "Petrov",
   "phone_number": "+79990000000",
-  "age": 30,
+  "birth_date": "2000-01-23",
   "about_me": "Люблю путешествия",
   "activities": ["ski", "hiking"],
   "country": "Russia",
@@ -181,6 +183,113 @@ venv/bin/uvicorn main:app --reload
   "updated_at": "2026-04-12T12:00:00Z"
 }
 ```
+
+## Настройки профиля
+
+Настройки профиля хранятся отдельно от основных данных профиля и создаются автоматически вместе с профилем.
+Текущие настройки:
+| Поле                             | Описание                                                           | 
+| ---------------------------------| -------------------------------------------------------------------|
+| show_profile                     | Разрешает отображение профиля другим пользователям                 |
+| show_name_in_reviews             | Разрешает отображение имени пользователя в отзывах                 |
+| use_activity_for_recommendations | Разрешает использовать активность пользователя для рекомендаций    |
+| use_profile_for_recommendations  | Разрешает использовать данные профиля для персональных рекомендаций|
+| use_city_for_tour_matching       | Разрешает использовать город пользователя для подбора туров        |
+
+По умолчанию все настройки имеют значение true.
+
+### GET /api/profile/me/settings
+
+Возвращает настройки текущего пользователя.
+```json
+{
+  "show_profile": true,
+  "show_name_in_reviews": true,
+  "use_activity_for_recommendations": true,
+  "use_profile_for_recommendations": true,
+  "use_city_for_tour_matching": true,
+  "updated_at": "2026-09-16T00:00:00Z"
+}
+```
+
+Ответы:
+- `200 OK` - настройки получены
+- `401 Unauthorized` - пользователь не определен
+- `404 Not Found` - настройки профиля не найдены
+
+### PATCH /api/profile/me/settings
+
+Частично обновляет настройки текущего пользователя.
+Можно передавать только те поля, которые необходимо изменить.
+
+Пример запроса:
+```json
+{
+  "show_profile": false,
+  "use_city_for_tour_matching": false
+}
+```
+Ответ:
+```json
+{
+  "show_profile": false,
+  "show_name_in_reviews": true,
+  "use_activity_for_recommendations": true,
+  "use_profile_for_recommendations": true,
+  "use_city_for_tour_matching": false,
+  "updated_at": "2026-09-16T00:00:00Z"
+}
+```
+Ответы:
+- `200 OK` - настройки обновлены
+- `401 Unauthorized `- пользователь не определен
+- `404 Not Found `- настройки профиля не найдены
+- `422 Unprocessable Entity` - некорректные данные запроса
+
+
+## Идентификация устройства
+
+Для фиксации устройств, с которых пользователь обращается к сервису, фронтенд должен передавать информацию об устройстве в HTTP-заголовках.
+
+### Заголовки устройства
+
+| Заголовок            | Обязательный | Описание                                         |
+| -------------------- | ------------ | ------------------------------------------------ |
+| `X-Device-ID`        | Да           | Уникальный и стабильный идентификатор устройства |
+| `X-Device-Name`      | Нет          | Название устройства, отображаемое пользователю   |
+| `Sec-CH-UA-Platform` | Нет          | Платформа устройства, например `"Windows"`       |
+| `User-Agent`         | Нет          | User-Agent клиента                               |
+
+### Пример запроса
+
+```http
+GET /api/profile/me HTTP/1.1
+Host: 127.0.0.1:8000
+X-Device-ID: 8f7c2a91-4d3b-4a6e-b123-123456789abc
+X-Device-Name: My Laptop
+Sec-CH-UA-Platform: "Windows"
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/148.0.0.0 Safari/537.36
+```
+
+### Требования к `X-Device-ID`
+
+`X-Device-ID` должен быть уникальным для каждого устройства и сохраняться между запросами.
+Например, один и тот же браузер должен отправлять один и тот же `X-Device-ID`:
+```http
+X-Device-ID: 8f7c2a91-4d3b-4a6e-b123-123456789abc
+```
+При обращении с другого устройства должен использоваться другой идентификатор:
+```http
+X-Device-ID: 31a5c821-7f21-4c12-9876-987654321def
+```
+Если `X-Device-ID` не передан, устройство не регистрируется.
+
+### Логика регистрации
+
+При первом обращении устройства сервис создаёт запись в `profile_devices`.
+При последующих обращениях `X-Device-ID` используется для определения устройства. Для снижения нагрузки на базу данных регистрация устройства дополнительно кешируется в Redis.
+Информация о последнем обращении хранится в поле `last_seen_at`.
+
 
 ## Тесты
 

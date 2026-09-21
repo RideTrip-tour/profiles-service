@@ -16,7 +16,7 @@ class StubProfileManager:
             "first_name": "Ann",
             "last_name": "Smith",
             "phone_number": None,
-            "age": None,
+            "birth_date": None,
             "about_me": None,
             "activities": [],
             "country": None,
@@ -32,19 +32,67 @@ class StubProfileManager:
         return self.profile
 
 
+class StubProfileIDManager:
+    def __init__(self, db, redis_client, profile_id=1):
+        self.db = db
+        self.redis_client = redis_client
+        self.profile_id = profile_id
+
+    async def get_profile_id(self, user_id: int) -> int | None:
+        assert user_id == 7
+        return self.profile_id
+
+
 @pytest.mark.asyncio
 async def test_x_user_claims_header_is_restored_into_request_state(
-    client, override_manager
+    client, override_manager, monkeypatch
 ):
     manager = override_manager(StubProfileManager())
+    monkeypatch.setattr(
+        "app.middlerware.request_context.ProfileIDManager",
+        StubProfileIDManager,
+    )
     claims = base64.urlsafe_b64encode(json.dumps({"id": "7"}).encode("utf-8")).decode(
         "ascii"
     )
+    response = await client.get(
+        "/api/profile/me",
+        headers={"X-User-Claims": claims},
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert manager.calls == [("get_profile_by_user_id", 7)]
 
+
+@pytest.mark.asyncio
+async def test_x_user_claims_without_user_id_returns_401(client):
+    claims = base64.urlsafe_b64encode(json.dumps({}).encode("utf-8")).decode("ascii")
     response = await client.get(
         "/api/profile/me",
         headers={"X-User-Claims": claims},
     )
 
-    assert response.status_code == status.HTTP_200_OK
-    assert manager.calls == [("get_profile_by_user_id", 7)]
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json() == {"detail": "User not identified"}
+
+
+@pytest.mark.asyncio
+async def test_profile_not_found_returns_401(client, monkeypatch):
+    monkeypatch.setattr(
+        "app.middlerware.request_context.ProfileIDManager",
+        lambda db, redis_client: StubProfileIDManager(
+            db=db,
+            redis_client=redis_client,
+            profile_id=None,
+        ),
+    )
+
+    claims = base64.urlsafe_b64encode(json.dumps({"id": "7"}).encode("utf-8")).decode(
+        "ascii"
+    )
+    response = await client.get(
+        "/api/profile/me",
+        headers={"X-User-Claims": claims},
+    )
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json() == {"detail": "Profile not found"}

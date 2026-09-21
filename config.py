@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     test_db_name: str = Field(
         validation_alias="TEST_DB_PROFILE_SERVICE_NAME", default="profile_db_test"
     )
+    # =========================
+    # Redis
+    # =========================
+    redis_url: str = "redis://redis:6379"
+    redis_ttl: int = 300  # время жизни кеша по умолчанию
 
     # =========================
     # Config

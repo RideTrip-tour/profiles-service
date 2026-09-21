@@ -2,36 +2,51 @@ import logging
 
 from fastapi import HTTPException, Request, status
 
+from app.db.models import Profile
+from app.utils.converters import convert_value_to_int
+from app.utils.validators import require_or_unauthorized
+
 logger = logging.getLogger(__name__)
 
 
-def get_current_user_id(request: Request) -> int:
+def _get_current_id_form_state(request: Request, key: str) -> int:
     user = getattr(request.state, "user", None)
     if not isinstance(user, dict):
         logger.warning(
-            f"request.state.user Не является словарем. Type: {type(user)}. data: {user}"
+            "Invalid request.state.user type: %s",
+            type(user).__name__,
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Unauthorized",
         )
 
-    user_id = user.get("id")
-    logger.info("ID пользователя %s", user_id)
-    if user_id in (None, ""):
-        logger.warning(f"sub отсутствует в user_data. Type {type(user)}. data: {user}")
+    current_id = user.get(key)
+    if current_id in (None, ""):
+        logger.warning("Missing required field '%s' in request.state.user", key)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Unauthorized",
         )
+    return require_or_unauthorized(convert_value_to_int(current_id))
 
-    try:
-        return int(user_id)
-    except (TypeError, ValueError) as exc:
-        logger.exception(
-            f"Значение user_id не удалось преобразовать в int. data: {user_id}"
+
+def get_current_user_id(request: Request) -> int:
+    return _get_current_id_form_state(request, "id")
+
+
+def get_current_profile_id(request: Request) -> int:
+    return _get_current_id_form_state(request, "profile_id")
+
+
+def can_view_profile(request: Request, profile: Profile) -> bool:
+    current_user_id = get_current_user_id(request)
+
+    if current_user_id != profile.user_id and not profile.settings.show_profile:
+        logger.info(
+            "Profile is hidden: current_user_id=%s requested_user_id=%s",
+            current_user_id,
+            profile.user_id,
         )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unauthorized",
-        ) from exc
+        return False
+    return True
