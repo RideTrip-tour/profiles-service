@@ -72,7 +72,7 @@ async def test_x_user_claims_without_user_id_returns_401(client):
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert response.json() == {"detail": "Unauthorized"}
+    assert response.json() == {"detail": "User not identified"}
 
 
 @pytest.mark.asyncio
