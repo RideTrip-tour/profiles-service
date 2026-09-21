@@ -4,22 +4,23 @@ import pycountry
 from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from .constants import (
+    MAX_LEN_ABOUT_ME,
+    MAX_LEN_ACTIVITIES,
+    MAX_LEN_CITIZENSHIP,
+    MAX_LEN_CITY,
+    MAX_LEN_COUNTRY,
+    MAX_LEN_CURRENCY,
+    MAX_LEN_NAME,
+    MIN_LEN_CITIZENSHIP,
+    MIN_LEN_CITY,
+    MIN_LEN_COUNTRY,
+    MIN_LEN_CURRENCY,
+    MIN_LEN_NAME,
+    PATTERN_CITY,
+    PATTERN_NAME,
+)
 from .validators.phone_number import normalize_phone_number
-
-MIN_LEN_NAME = 2
-MAX_LEN_NAME = 15
-PATTERN_NAME = r"^[A-Za-zА-Яа-яЁё]+(?:[ -][A-Za-zА-Яа-яЁё]+)?$"
-MAX_LEN_ABOUT_ME = 200
-MAX_LEN_ACTIVITIES = 25
-MIN_LEN_COUNTRY = 2
-MAX_LEN_COUNTRY = 25
-MIN_LEN_CITY = 2
-MAX_LEN_CITY = 25
-PATTERN_CITY = r"^[A-Za-zА-Яа-яЁё]+(?:[ -][A-Za-zА-Яа-яЁё]+)*$"
-MIN_LEN_CITIZENSHIP = 2
-MAX_LEN_CITIZENSHIP = 15
-MAX_LEN_CURRENCY = 3
-MIN_LEN_CURRENCY = MAX_LEN_CURRENCY
 
 
 class ProfileBase(BaseModel):
@@ -27,14 +28,14 @@ class ProfileBase(BaseModel):
 
     first_name: str | None = Field(
         default=None,
-        min_length=2,
-        max_length=15,
+        min_length=MIN_LEN_NAME,
+        max_length=MAX_LEN_NAME,
         pattern=PATTERN_NAME,
     )
     last_name: str | None = Field(
         default=None,
-        min_length=2,
-        max_length=15,
+        min_length=MIN_LEN_NAME,
+        max_length=MAX_LEN_NAME,
         pattern=PATTERN_NAME,
     )
     phone_number: str | None = None
@@ -53,7 +54,10 @@ class ProfileBase(BaseModel):
         default=None, min_length=MIN_LEN_COUNTRY, max_length=MAX_LEN_COUNTRY
     )
     city: str | None = Field(
-        default=None, min_length=MIN_LEN_CITY, max_length=MAX_LEN_CITY
+        default=None,
+        min_length=MIN_LEN_CITY,
+        max_length=MAX_LEN_CITY,
+        pattern=PATTERN_CITY,
     )
     citizenship: str | None = Field(
         default=None, min_length=MIN_LEN_CITIZENSHIP, max_length=MAX_LEN_CITIZENSHIP
@@ -108,6 +112,10 @@ class ProfileResponse(ProfileBase):
     updated_at: datetime
 
 
+class ProfileHiddenResponse(BaseModel):
+    detail: str
+
+
 class FavoriteLocationCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -123,3 +131,23 @@ class FavoriteLocationResponse(BaseModel):
 
 class FavoriteLocationsResponse(BaseModel):
     location_ids: list[FavoriteLocationResponse]
+
+
+class ProfileSettings(BaseModel):
+    model_config = ConfigDict(from_attributes=True, extra="forbid")
+
+    show_profile: bool
+    show_name_in_reviews: bool
+    use_activity_for_recommendations: bool
+    use_profile_for_recommendations: bool
+    use_city_for_tour_matching: bool
+
+
+class ProfileSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    show_profile: bool | None = None
+    show_name_in_reviews: bool | None = None
+    use_activity_for_recommendations: bool | None = None
+    use_profile_for_recommendations: bool | None = None
+    use_city_for_tour_matching: bool | None = None

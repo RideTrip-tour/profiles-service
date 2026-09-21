@@ -2,14 +2,21 @@ import logging
 
 from fastapi import APIRouter, Depends, Request, status
 
-from app.dependencies.auth import check_user_access, get_current_user_id
+from app.dependencies.auth import (
+    can_view_profile,
+    get_current_profile_id,
+    get_current_user_id,
+)
 from app.dependencies.profiles import get_profile_manager
 from app.schemas.profiles_schemas import (
     FavoriteLocationCreate,
     FavoriteLocationResponse,
     FavoriteLocationsResponse,
     ProfileCreate,
+    ProfileHiddenResponse,
     ProfileResponse,
+    ProfileSettings,
+    ProfileSettingsUpdate,
     ProfileUpdate,
 )
 from app.services.profiles_manager import ProfileManager
@@ -70,27 +77,29 @@ async def get_favorite_locations(
 
 @router.get(
     "/{user_id}/favorite-locations",
-    response_model=FavoriteLocationsResponse,
+    response_model=FavoriteLocationsResponse | ProfileHiddenResponse,
 )
 async def get_favorite_locations_by_user_id(
     user_id: int,
     request: Request,
     manager: ProfileManager = Depends(get_profile_manager),
 ):
-    check_user_access(request, user_id)
-    return FavoriteLocationsResponse(
-        location_ids=await manager.get_favorite_location(user_id)
-    )
+    profile = await manager.get_profile_by_user_id(user_id)
+    if not can_view_profile(request, profile):
+        return ProfileHiddenResponse(detail="User has hidden their information")
+    return FavoriteLocationsResponse(location_ids=profile.favorites)
 
 
-@router.get("/{user_id}", response_model=ProfileResponse)
+@router.get("/{user_id}", response_model=ProfileResponse | ProfileHiddenResponse)
 async def get_profile_by_id(
     user_id: int,
     request: Request,
     manager: ProfileManager = Depends(get_profile_manager),
 ):
-    check_user_access(request, user_id)
-    return await manager.get_profile_by_user_id(user_id)
+    profile = await manager.get_profile_by_user_id(user_id)
+    if not can_view_profile(request, profile):
+        return ProfileHiddenResponse(detail="User has hidden their profile information")
+    return profile
 
 
 @router.patch("/me", response_model=ProfileResponse)
@@ -124,4 +133,30 @@ async def delete_favorite_location(
     await manager.delete_favorite_location(
         get_current_user_id(request),
         location_id,
+    )
+
+
+@router.get(
+    "/me/settings",
+    response_model=ProfileSettings,
+)
+async def get_settings(
+    request: Request,
+    manager: ProfileManager = Depends(get_profile_manager),
+):
+    return await manager.get_profile_settings(get_current_profile_id(request))
+
+
+@router.patch(
+    "/me/settings",
+    response_model=ProfileSettings,
+)
+async def update_settings(
+    request: Request,
+    payload: ProfileSettingsUpdate,
+    manager: ProfileManager = Depends(get_profile_manager),
+):
+    return await manager.update_profile_settings(
+        get_current_profile_id(request),
+        payload,
     )

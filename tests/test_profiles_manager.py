@@ -4,7 +4,11 @@ import pytest
 from fastapi import HTTPException
 
 from app.schemas.admin_schemas import ProfileCreate as AdminProfileCreate
-from app.schemas.profiles_schemas import ProfileCreate, ProfileUpdate
+from app.schemas.profiles_schemas import (
+    ProfileCreate,
+    ProfileSettingsUpdate,
+    ProfileUpdate,
+)
 from app.services.profiles_manager import ProfileManager
 
 
@@ -355,3 +359,73 @@ async def test_delete_favorite_location_calls_crud(monkeypatch):
     manager = ProfileManager(db=object())
     result = await manager.delete_favorite_location(7, 10)
     assert result is None
+
+
+@pytest.mark.asyncio
+async def test_get_profile_settings_returns_settings(profile_settings, monkeypatch):
+
+    async def fake_get_profile_settings(db, profile_id):
+        assert profile_id == 1
+        return profile_settings
+
+    monkeypatch.setattr(
+        "app.services.profiles_manager.crud_get_profile_settings",
+        fake_get_profile_settings,
+    )
+
+    manager = ProfileManager(db=object())
+
+    result = await manager.get_profile_settings(1)
+
+    assert result is profile_settings
+
+
+@pytest.mark.asyncio
+async def test_get_profile_settings_raises_not_found(monkeypatch):
+    async def fake_get_profile_settings(db, profile_id):
+        assert profile_id == 1
+
+    monkeypatch.setattr(
+        "app.services.profiles_manager.crud_get_profile_settings",
+        fake_get_profile_settings,
+    )
+
+    manager = ProfileManager(db=object())
+
+    with pytest.raises(HTTPException) as exc_info:
+        await manager.get_profile_settings(1)
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Profile settings not found"
+
+
+@pytest.mark.asyncio
+async def test_update_profile_settings_passes_payload_to_crud(
+    profile_settings, monkeypatch
+):
+    update_data = {
+        "show_profile": False,
+    }
+
+    async def fake_get_profile_settings(db, profile_id):
+        assert profile_id == 1
+        return profile_settings
+
+    async def fake_update_profile_settings(db, settings_arg, payload):
+        assert payload.model_dump(exclude_unset=True) == update_data
+        settings_arg.show_profile = update_data.get("show_profile")
+        return settings_arg
+
+    monkeypatch.setattr(
+        "app.services.profiles_manager.crud_get_profile_settings",
+        fake_get_profile_settings,
+    )
+    monkeypatch.setattr(
+        "app.services.profiles_manager.crud_update_profile_settings",
+        fake_update_profile_settings,
+    )
+
+    manager = ProfileManager(db=object())
+    payload = ProfileSettingsUpdate(**update_data)
+    result = await manager.update_profile_settings(1, payload)
+    assert result.show_profile is False

@@ -14,6 +14,12 @@ from app.crud.favorite_locations_crud import (
 from app.crud.favorite_locations_crud import (
     get_or_create_favorite_location as crud_get_or_create_favorite_location,
 )
+from app.crud.profile_settings_crud import (
+    get_profile_settings as crud_get_profile_settings,
+)
+from app.crud.profile_settings_crud import (
+    update_profile_settings as crud_update_profile_settings,
+)
 from app.crud.profiles_crud import (
     admin_create_profile as crud_admin_create_profile,
 )
@@ -40,7 +46,11 @@ from app.crud.profiles_crud import (
 )
 from app.db.models import FavoriteLocation
 from app.schemas.admin_schemas import ProfileCreate as AdminProfileCreate
-from app.schemas.profiles_schemas import ProfileCreate, ProfileUpdate
+from app.schemas.profiles_schemas import (
+    ProfileCreate,
+    ProfileSettingsUpdate,
+    ProfileUpdate,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +119,7 @@ class ProfileManager:
 
     async def delete_profile_by_id(self, profile_id: int) -> None:
         deleted = await crud_delete_profile_by_id(self.db, profile_id)
-        logger.info("Profile deleted: user_id=%s", profile_id)
+        logger.info("Profile deleted: profile_id=%s", profile_id)
         self._raise_not_found(deleted)
 
     async def add_favorite_location(self, user_id: int, location_id: int):
@@ -148,6 +158,33 @@ class ProfileManager:
     def get_or_raise_not_found(self, obj: T, detail: str = "Profile not found") -> T:
         self._raise_not_found(obj, detail)
         return obj
+
+    async def get_profile_settings(self, profile_id: int):
+        profile_settings = self.get_or_raise_not_found(
+            await crud_get_profile_settings(self.db, profile_id),
+            detail="Profile settings not found",
+        )
+        logger.info(
+            "Profile settings retrieved: profile_id=%s",
+            profile_id,
+        )
+        return profile_settings
+
+    async def update_profile_settings(
+        self,
+        profile_id: int,
+        payload: ProfileSettingsUpdate,
+    ):
+        profile_settings = await crud_update_profile_settings(
+            self.db,
+            await self.get_profile_settings(profile_id),
+            payload,
+        )
+        logger.info(
+            "Profile settings updated: profile_id=%s",
+            profile_id,
+        )
+        return profile_settings
 
     @staticmethod
     def _raise_not_found(obj: T, detail: str = "Profile not found") -> None:

@@ -3,6 +3,7 @@ import sys
 from collections.abc import Generator
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -106,4 +107,16 @@ def profile_id_manager(redis_client):
     return ProfileIDManager(
         db=MagicMock(),
         redis_client=redis_client,
+    )
+
+
+@pytest.fixture
+def profile_settings():
+    return SimpleNamespace(
+        profile_id=1,
+        show_profile=True,
+        show_name_in_reviews=True,
+        use_activity_for_recommendations=False,
+        use_profile_for_recommendations=True,
+        use_city_for_tour_matching=False,
     )

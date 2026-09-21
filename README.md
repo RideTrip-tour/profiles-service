@@ -184,6 +184,69 @@ venv/bin/uvicorn main:app --reload
 }
 ```
 
+## Настройки профиля
+
+Настройки профиля хранятся отдельно от основных данных профиля и создаются автоматически вместе с профилем.
+Текущие настройки:
+| Поле                             | Описание                                                           | 
+| ---------------------------------| -------------------------------------------------------------------|
+| show_profile                     | Разрешает отображение профиля другим пользователям                 |
+| show_name_in_reviews             | Разрешает отображение имени пользователя в отзывах                 |
+| use_activity_for_recommendations | Разрешает использовать активность пользователя для рекомендаций    |
+| use_profile_for_recommendations  | Разрешает использовать данные профиля для персональных рекомендаций|
+| use_city_for_tour_matching       | Разрешает использовать город пользователя для подбора туров        |
+
+По умолчанию все настройки имеют значение true.
+
+### GET /api/profile/me/settings
+
+Возвращает настройки текущего пользователя.
+```json
+{
+  "show_profile": true,
+  "show_name_in_reviews": true,
+  "use_activity_for_recommendations": true,
+  "use_profile_for_recommendations": true,
+  "use_city_for_tour_matching": true,
+  "updated_at": "2026-09-16T00:00:00Z"
+}
+```
+
+Ответы:
+- `200 OK` - настройки получены
+- `401 Unauthorized` - пользователь не определен
+- `404 Not Found` - настройки профиля не найдены
+
+### PATCH /api/profile/me/settings
+
+Частично обновляет настройки текущего пользователя.
+Можно передавать только те поля, которые необходимо изменить.
+
+Пример запроса:
+```json
+{
+  "show_profile": false,
+  "use_city_for_tour_matching": false
+}
+```
+Ответ:
+```json
+{
+  "show_profile": false,
+  "show_name_in_reviews": true,
+  "use_activity_for_recommendations": true,
+  "use_profile_for_recommendations": true,
+  "use_city_for_tour_matching": false,
+  "updated_at": "2026-09-16T00:00:00Z"
+}
+```
+Ответы:
+- `200 OK` - настройки обновлены
+- `401 Unauthorized `- пользователь не определен
+- `404 Not Found `- настройки профиля не найдены
+- `422 Unprocessable Entity` - некорректные данные запроса
+
+
 ## Идентификация устройства
 
 Для фиксации устройств, с которых пользователь обращается к сервису, фронтенд должен передавать информацию об устройстве в HTTP-заголовках.

@@ -25,7 +25,7 @@ def expected_payload(**overrides):
 
 
 class StubProfileManager:
-    def __init__(self):
+    def __init__(self, profile_settings=None):
         self.calls = []
         self.profile = {
             "id": 1,
@@ -44,6 +44,7 @@ class StubProfileManager:
             "created_at": datetime(2024, 1, 1, tzinfo=UTC),
             "updated_at": datetime(2024, 1, 1, tzinfo=UTC),
         }
+        self.profile_settings = profile_settings
 
     async def create_profile(self, user_id, payload):
         self.calls.append(("create_profile", user_id, payload.model_dump()))
@@ -51,7 +52,25 @@ class StubProfileManager:
 
     async def get_profile_by_user_id(self, user_id):
         self.calls.append(("get_profile_by_user_id", user_id))
-        return self.profile
+
+        profile_data = {
+            **self.profile,
+            "user_id": user_id,
+        }
+        return SimpleNamespace(
+            **profile_data,
+            settings=self.profile_settings,
+            favorites=[
+                SimpleNamespace(
+                    location_id=10,
+                    created_at=datetime(2024, 1, 1, tzinfo=UTC),
+                ),
+                SimpleNamespace(
+                    location_id=20,
+                    created_at=datetime(2024, 1, 2, tzinfo=UTC),
+                ),
+            ],
+        )
 
     async def update_profile_by_user_id(self, user_id, payload):
         self.calls.append(("update_profile_by_user_id", user_id, payload.model_dump()))
@@ -83,6 +102,24 @@ class StubProfileManager:
     async def delete_favorite_location(self, user_id, location_id):
         self.calls.append(("delete_favorite_location", user_id, location_id))
 
+    async def get_profile_settings(self, profile_id):
+        self.calls.append(("get_profile_settings", profile_id))
+        return self.profile_settings
+
+    async def update_profile_settings(self, profile_id, payload):
+        self.calls.append(
+            (
+                "update_profile_settings",
+                profile_id,
+                payload.model_dump(exclude_unset=True),
+            )
+        )
+
+        for field, value in payload.model_dump(exclude_unset=True).items():
+            setattr(self.profile_settings, field, value)
+
+        return self.profile_settings
+
 
 @pytest.mark.asyncio
 async def test_create_profile_uses_current_user_id(
@@ -102,14 +139,39 @@ async def test_create_profile_uses_current_user_id(
 async def test_get_profile_by_id_returns_forbidden_for_another_user(
     client, override_manager, monkeypatch
 ):
-    manager = override_manager(StubProfileManager())
+    manager = override_manager(StubProfileManager(SimpleNamespace(show_profile=False)))
     monkeypatch.setattr("app.dependencies.auth.get_current_user_id", lambda _: 7)
 
     response = await client.get("/api/profile/8")
 
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert response.json()["detail"] == "Forbidden"
-    assert manager.calls == []
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"detail": "User has hidden their profile information"}
+    assert manager.calls == [("get_profile_by_user_id", 8)]
+
+
+@pytest.mark.asyncio
+async def test_get_profile_by_id_returns_profile_for_visible_profile(
+    client,
+    override_manager,
+    monkeypatch,
+):
+    manager = override_manager(
+        StubProfileManager(
+            SimpleNamespace(show_profile=True),
+        )
+    )
+    monkeypatch.setattr(
+        "app.dependencies.auth.get_current_user_id",
+        lambda _: 7,
+    )
+    response = await client.get("/api/profile/8")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["id"] == 1
+    assert response.json()["user_id"] == 8
+    assert manager.calls == [
+        ("get_profile_by_user_id", 8),
+    ]
 
 
 @pytest.mark.asyncio
@@ -178,20 +240,22 @@ async def test_delete_profile_by_id_returns_no_content_for_owner(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("url", "patch_target"),
+    ("url", "patch_target", "expected_call"),
     [
         (
             "/api/profile/me/favorite-locations",
             "app.routes.profiles_routes.get_current_user_id",
+            ("get_favorite_location", 7),
         ),
         (
             "/api/profile/7/favorite-locations",
             "app.dependencies.auth.get_current_user_id",
+            ("get_profile_by_user_id", 7),
         ),
     ],
 )
 async def test_get_favorite_locations(
-    client, override_manager, monkeypatch, url, patch_target
+    client, override_manager, monkeypatch, url, patch_target, expected_call
 ):
     manager = override_manager(StubProfileManager())
     monkeypatch.setattr(patch_target, lambda _: 7)
@@ -209,9 +273,7 @@ async def test_get_favorite_locations(
             },
         ]
     }
-    assert manager.calls == [
-        ("get_favorite_location", 7),
-    ]
+    assert manager.calls == [expected_call]
 
 
 @pytest.mark.asyncio
@@ -220,7 +282,7 @@ async def test_get_favorite_locations_by_user_id_returns_forbidden(
     override_manager,
     monkeypatch,
 ):
-    manager = override_manager(StubProfileManager())
+    manager = override_manager(StubProfileManager(SimpleNamespace(show_profile=False)))
     monkeypatch.setattr(
         "app.dependencies.auth.get_current_user_id",
         lambda _: 7,
@@ -228,9 +290,46 @@ async def test_get_favorite_locations_by_user_id_returns_forbidden(
     response = await client.get(
         "/api/profile/8/favorite-locations",
     )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert response.json()["detail"] == "Forbidden"
-    assert manager.calls == []
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"detail": "User has hidden their information"}
+    assert manager.calls == [("get_profile_by_user_id", 8)]
+
+
+@pytest.mark.asyncio
+async def test_get_favorite_locations_by_user_id_returns_locations_for_visible_profile(
+    client,
+    override_manager,
+    monkeypatch,
+):
+    manager = override_manager(
+        StubProfileManager(
+            SimpleNamespace(show_profile=True),
+        )
+    )
+    monkeypatch.setattr(
+        "app.dependencies.auth.get_current_user_id",
+        lambda _: 7,
+    )
+    response = await client.get(
+        "/api/profile/8/favorite-locations",
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {
+        "location_ids": [
+            {
+                "location_id": 10,
+                "created_at": "2024-01-01T00:00:00Z",
+            },
+            {
+                "location_id": 20,
+                "created_at": "2024-01-02T00:00:00Z",
+            },
+        ]
+    }
+    assert manager.calls == [
+        ("get_profile_by_user_id", 8),
+    ]
 
 
 @pytest.mark.asyncio
@@ -311,4 +410,100 @@ async def test_update_my_profile_returns_422_for_too_long_field(
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert manager.calls == []
+
+
+@pytest.mark.asyncio
+async def test_get_my_profile_settings_uses_current_profile_id(
+    client, override_manager, monkeypatch, profile_settings
+):
+    manager = override_manager(StubProfileManager(profile_settings))
+    monkeypatch.setattr(
+        "app.routes.profiles_routes.get_current_profile_id",
+        lambda _: 1,
+    )
+    response = await client.get("/api/profile/me/settings")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {
+        "show_profile": profile_settings.show_profile,
+        "show_name_in_reviews": profile_settings.show_name_in_reviews,
+        "use_activity_for_recommendations": (
+            profile_settings.use_activity_for_recommendations
+        ),
+        "use_profile_for_recommendations": (
+            profile_settings.use_profile_for_recommendations
+        ),
+        "use_city_for_tour_matching": profile_settings.use_city_for_tour_matching,
+    }
+    assert manager.calls == [
+        ("get_profile_settings", 1),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_get_my_profile_settings_unauthorized(
+    client, override_manager, profile_settings
+):
+    manager = override_manager(StubProfileManager(profile_settings))
+    response = await client.get("/api/profile/me/settings")
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json()["detail"] == "Unauthorized"
+    assert manager.calls == []
+
+
+@pytest.mark.asyncio
+async def test_update_my_profile_settings_uses_current_profile_id(
+    client, override_manager, monkeypatch, profile_settings
+):
+    manager = override_manager(StubProfileManager(profile_settings))
+
+    monkeypatch.setattr(
+        "app.routes.profiles_routes.get_current_profile_id",
+        lambda _: 1,
+    )
+    payload = {
+        "show_profile": False,
+        "use_city_for_tour_matching": False,
+    }
+
+    response = await client.patch(
+        "/api/profile/me/settings",
+        json=payload,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {
+        "show_profile": payload.get("show_profile"),
+        "show_name_in_reviews": profile_settings.show_name_in_reviews,
+        "use_activity_for_recommendations": (
+            profile_settings.use_activity_for_recommendations
+        ),
+        "use_profile_for_recommendations": (
+            profile_settings.use_profile_for_recommendations
+        ),
+        "use_city_for_tour_matching": payload.get("use_city_for_tour_matching"),
+    }
+    assert manager.calls == [
+        (
+            "update_profile_settings",
+            1,
+            {
+                "show_profile": False,
+                "use_city_for_tour_matching": False,
+            },
+        )
+    ]
+
+
+@pytest.mark.asyncio
+async def test_update_my_profile_settings_unauthorized(
+    client, override_manager, profile_settings
+):
+    manager = override_manager(StubProfileManager(profile_settings))
+    response = await client.patch(
+        "/api/profile/me/settings",
+        json={"show_profile": False},
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json()["detail"] == "Unauthorized"
     assert manager.calls == []

@@ -12,6 +12,8 @@ from app.schemas.profiles_schemas import (
     FavoriteLocationResponse,
     FavoriteLocationsResponse,
     ProfileResponse,
+    ProfileSettings,
+    ProfileSettingsUpdate,
 )
 from tests.conftest import INVALID_PROFILE_FIELDS
 
@@ -284,3 +286,36 @@ def test_birth_date_rejects_future_date(profile_schema, today):
     birth_date = today + relativedelta(days=1)
     with pytest.raises(ValidationError):
         schema(**{**data, "birth_date": birth_date})
+
+
+def test_profile_settings_update_rejects_extra_fields():
+    with pytest.raises(ValidationError):
+        ProfileSettingsUpdate(
+            show_profile=False,
+            unknown_setting=True,
+        )
+
+
+def test_profile_settings_response_from_orm(profile_settings):
+    response = ProfileSettings.model_validate(profile_settings)
+    assert response.show_profile is True
+    assert response.show_name_in_reviews is True
+    assert response.use_activity_for_recommendations is False
+    assert response.use_profile_for_recommendations is True
+    assert response.use_city_for_tour_matching is False
+
+
+def test_profile_settings_update_allows_partial_update():
+    settings = ProfileSettingsUpdate(
+        show_profile=False,
+        show_name_in_reviews=False,
+    )
+
+    assert settings.model_dump(exclude_unset=True) == {
+        "show_profile": False,
+        "show_name_in_reviews": False,
+    }
+
+    assert settings.use_activity_for_recommendations is None
+    assert settings.use_profile_for_recommendations is None
+    assert settings.use_city_for_tour_matching is None
