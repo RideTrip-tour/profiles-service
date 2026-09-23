@@ -4,7 +4,7 @@ from typing import TypeVar
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.clients.locations_client import check_location_exists
+from app.clients.locations_client import LocationClient
 from app.crud.favorite_locations_crud import (
     delete_favorite_location as crud_delete_favorite_location,
 )
@@ -59,8 +59,9 @@ T = TypeVar("T")
 
 
 class ProfileManager:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, location_client: LocationClient):
         self.db = db
+        self.location_client = location_client
 
     async def create_profile(self, user_id: int, profile_in: ProfileCreate):
         existing_profile = await crud_get_profile_by_user_id(self.db, user_id)
@@ -96,7 +97,20 @@ class ProfileManager:
         self._raise_not_found(profile)
         return profile
 
+    async def _validate_city_country(self, payload: ProfileUpdate) -> None:
+        try:
+            if payload.country_id is not None:
+                await self.location_client.check_country_exists(payload.country_id)
+            if payload.city_id is not None:
+                await self.location_client.check_city_exists(payload.city_id)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(exc),
+            ) from exc
+
     async def update_profile_by_user_id(self, user_id: int, payload: ProfileUpdate):
+        await self._validate_city_country(payload)
         profile = await crud_update_profile_by_user_id(self.db, user_id, payload)
         self._raise_not_found(profile)
         logger.info(
@@ -107,6 +121,7 @@ class ProfileManager:
         return profile
 
     async def update_profile_by_id(self, profile_id: int, payload: ProfileUpdate):
+        await self._validate_city_country(payload)
         profile = await crud_update_profile_by_id(self.db, profile_id, payload)
         self._raise_not_found(profile)
         logger.info("Profile updated: profile_id=%s", profile_id)
@@ -123,7 +138,7 @@ class ProfileManager:
         self._raise_not_found(deleted)
 
     async def add_favorite_location(self, user_id: int, location_id: int):
-        await check_location_exists(location_id)
+        await self.location_client.check_location_exists(location_id)
         favorite_location = await crud_get_or_create_favorite_location(
             self.db,
             user_id,
