@@ -39,18 +39,23 @@ from app.crud.profiles_crud import (
     get_profile_by_user_id as crud_get_profile_by_user_id,
 )
 from app.crud.profiles_crud import (
+    get_profile_id_by_user_id as crud_get_profile_id_by_user_id,
+)
+from app.crud.profiles_crud import (
     update_profile_by_id as crud_update_profile_by_id,
 )
 from app.crud.profiles_crud import (
     update_profile_by_user_id as crud_update_profile_by_user_id,
 )
-from app.db.models import FavoriteLocation
+from app.db.models import FavoriteLocation, ProfileSettings
 from app.schemas.admin_schemas import ProfileCreate as AdminProfileCreate
 from app.schemas.profiles_schemas import (
     ProfileCreate,
     ProfileSettingsUpdate,
     ProfileUpdate,
 )
+from app.services.cache_manager import CacheManager
+from app.utils.converters import convert_value_to_int
 
 logger = logging.getLogger(__name__)
 
@@ -59,8 +64,9 @@ T = TypeVar("T")
 
 
 class ProfileManager:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, cache: CacheManager):
         self.db = db
+        self.cache = cache
 
     async def create_profile(self, user_id: int, profile_in: ProfileCreate):
         existing_profile = await crud_get_profile_by_user_id(self.db, user_id)
@@ -70,6 +76,10 @@ class ProfileManager:
             "Profile created: user_id=%s profile_id=%s",
             user_id,
             profile.id,
+        )
+        await self.cache.set(
+            key=self.cache.get_settings_key(profile.id),
+            value="1" if profile.settings.show_profile else "0",
         )
         return profile
 
@@ -95,6 +105,35 @@ class ProfileManager:
         profile = await crud_get_profile_by_id(self.db, profile_id)
         self._raise_not_found(profile)
         return profile
+
+    async def get_profile_id(self, user_id: int) -> int | None:
+        key = self.cache.get_profile_id_key(user_id=user_id)
+        cached_profile_id = await self.cache.get(key)
+        if cached_profile_id is not None:
+            logger.debug(
+                "Profile ID cache hit: user_id=%s profile_id=%s",
+                user_id,
+                cached_profile_id,
+            )
+            return convert_value_to_int(cached_profile_id)
+        logger.debug("Profile ID cache miss: user_id=%s", user_id)
+        profile_id = await self._get_profile_id_from_db(user_id=user_id)
+        logger.debug(
+            "Profile ID loaded from database: user_id=%s profile_id=%s",
+            user_id,
+            profile_id,
+        )
+        if profile_id is not None:
+            await self.cache.set(value=profile_id, key=key)
+            logger.debug("Profile ID cached: profile_id=%s", profile_id)
+        return profile_id
+
+    async def get_profile_id_or_raise(self, user_id: int) -> int:
+        profile_id = await self.get_profile_id(user_id)
+        return self.get_or_raise_not_found(profile_id)
+
+    async def _get_profile_id_from_db(self, user_id: int) -> int | None:
+        return await crud_get_profile_id_by_user_id(db=self.db, user_id=user_id)
 
     async def update_profile_by_user_id(self, user_id: int, payload: ProfileUpdate):
         profile = await crud_update_profile_by_user_id(self.db, user_id, payload)
@@ -155,11 +194,17 @@ class ProfileManager:
             location_id,
         )
 
-    def get_or_raise_not_found(self, obj: T, detail: str = "Profile not found") -> T:
-        self._raise_not_found(obj, detail)
+    def get_or_raise_not_found(
+        self, obj: T | None, detail: str = "Profile not found"
+    ) -> T:
+        if not obj:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=detail,
+            )
         return obj
 
-    async def get_profile_settings(self, profile_id: int):
+    async def get_profile_settings(self, profile_id: int) -> ProfileSettings:
         profile_settings = self.get_or_raise_not_found(
             await crud_get_profile_settings(self.db, profile_id),
             detail="Profile settings not found",
@@ -180,14 +225,46 @@ class ProfileManager:
             await self.get_profile_settings(profile_id),
             payload,
         )
+        await self.cache.set(
+            key=self.cache.get_settings_key(profile_id),
+            value="1" if profile_settings.show_profile else "0",
+        )
         logger.info(
             "Profile settings updated: profile_id=%s",
             profile_id,
         )
         return profile_settings
 
+    async def get_show_profile(self, profile_id: int) -> bool:
+        key = self.cache.get_settings_key(profile_id)
+        cached_value = await self.cache.get(key)
+
+        if cached_value is not None:
+            logger.debug(
+                "Profile visibility cache hit: profile_id=%s",
+                profile_id,
+            )
+            return cached_value == "1"
+
+        logger.debug(
+            "Profile visibility cache miss: profile_id=%s",
+            profile_id,
+        )
+        profile_settings = await self.get_profile_settings(profile_id=profile_id)
+        show_profile = profile_settings.show_profile
+        await self.cache.set(
+            key=key,
+            value="1" if show_profile else "0",
+        )
+        logger.debug(
+            "Profile visibility cached: profile_id=%s show_profile=%s",
+            profile_id,
+            show_profile,
+        )
+        return show_profile
+
     @staticmethod
-    def _raise_not_found(obj: T, detail: str = "Profile not found") -> None:
+    def _raise_not_found(obj: T | None, detail: str = "Profile not found") -> None:
         if not obj:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
 

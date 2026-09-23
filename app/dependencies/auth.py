@@ -2,7 +2,6 @@ import logging
 
 from fastapi import HTTPException, Request, status
 
-from app.db.models import Profile
 from app.utils.converters import convert_value_to_int
 from app.utils.validators import require_or_unauthorized
 
@@ -39,14 +38,13 @@ def get_current_profile_id(request: Request) -> int:
     return _get_current_id_form_state(request, "profile_id")
 
 
-def can_view_profile(request: Request, profile: Profile) -> bool:
+def can_view_profile(request: Request, user_id: int, show_profile: bool) -> bool:
     current_user_id = get_current_user_id(request)
-
-    if current_user_id != profile.user_id and not profile.settings.show_profile:
+    if current_user_id != user_id and not show_profile:
         logger.info(
             "Profile is hidden: current_user_id=%s requested_user_id=%s",
             current_user_id,
-            profile.user_id,
+            user_id,
         )
         return False
     return True
