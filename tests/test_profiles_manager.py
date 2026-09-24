@@ -485,7 +485,7 @@ async def test_get_show_profile_returns_cached_value(
     redis_client,
     monkeypatch,
 ):
-    key = profile_manager.cache.get_settings_key(profile_id=7)
+    key = profile_manager.cache.profile_keys.get_show_profile(profile_id=7)
     redis_client.data[key] = "1"
 
     async def mock_get_profile_settings(*args, **kwargs):
@@ -505,7 +505,7 @@ async def test_get_show_profile_returns_false_from_cache(
     profile_manager,
     redis_client,
 ):
-    key = profile_manager.cache.get_settings_key(profile_id=7)
+    key = profile_manager.cache.profile_keys.get_show_profile(profile_id=7)
     redis_client.data[key] = "0"
 
     result = await profile_manager.get_show_profile(profile_id=7)
@@ -530,7 +530,7 @@ async def test_get_show_profile_loads_from_db_and_caches_value(
     )
 
     result = await profile_manager.get_show_profile(profile_id=7)
-    key = profile_manager.cache.get_settings_key(profile_id=7)
+    key = profile_manager.cache.profile_keys.get_show_profile(profile_id=7)
 
     assert result is True
     assert redis_client.data[key] == "1"
@@ -554,7 +554,7 @@ async def test_get_show_profile_caches_false_value(
     )
 
     result = await profile_manager.get_show_profile(profile_id=7)
-    key = profile_manager.cache.get_settings_key(profile_id=7)
+    key = profile_manager.cache.profile_keys.get_show_profile(profile_id=7)
 
     assert result is False
     assert redis_client.data[key] == "0"

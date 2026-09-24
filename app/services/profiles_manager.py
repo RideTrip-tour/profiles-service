@@ -78,7 +78,7 @@ class ProfileManager:
             profile.id,
         )
         await self.cache.set(
-            key=self.cache.get_settings_key(profile.id),
+            key=self.cache.profile_keys.get_show_profile(profile.id),
             value="1" if profile.settings.show_profile else "0",
         )
         return profile
@@ -107,7 +107,7 @@ class ProfileManager:
         return profile
 
     async def get_profile_id(self, user_id: int) -> int | None:
-        key = self.cache.get_profile_id_key(user_id=user_id)
+        key = self.cache.profile_keys.get_profile_id(user_id=user_id)
         cached_profile_id = await self.cache.get(key)
         if cached_profile_id is not None:
             logger.debug(
@@ -226,7 +226,7 @@ class ProfileManager:
             payload,
         )
         await self.cache.set(
-            key=self.cache.get_settings_key(profile_id),
+            key=self.cache.profile_keys.get_show_profile(profile_id),
             value="1" if profile_settings.show_profile else "0",
         )
         logger.info(
@@ -236,7 +236,7 @@ class ProfileManager:
         return profile_settings
 
     async def get_show_profile(self, profile_id: int) -> bool:
-        key = self.cache.get_settings_key(profile_id)
+        key = self.cache.profile_keys.get_show_profile(profile_id)
         cached_value = await self.cache.get(key)
 
         if cached_value is not None:

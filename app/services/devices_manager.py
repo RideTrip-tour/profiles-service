@@ -40,7 +40,7 @@ class DeviceManager:
         повторная регистрация одного устройства в течение TTL (300 c) не выполняет
         операцию с базой данных.
         """
-        key = self.cache.get_device_key(profile_id, device_id)
+        key = self.cache.device_keys.get_device(profile_id, device_id)
         cached_device_seen = await self.cache.get(key)
         if cached_device_seen is None:
             logger.debug(
@@ -85,7 +85,9 @@ class DeviceManager:
     async def delete_device(self, profile_id: int, device_id: str) -> None:
         deleted = await crud_delete_device(self.db, profile_id, device_id)
         if deleted:
-            await self.cache.delete(self.cache.get_device_key(profile_id, device_id))
+            await self.cache.delete(
+                self.cache.device_keys.get_device(profile_id, device_id)
+            )
             logger.info(
                 "Device deleted: profile_id=%s device_id=%s",
                 profile_id,

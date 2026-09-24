@@ -96,22 +96,25 @@ def today():
 
 
 @pytest.fixture
-def device_manager(redis_client):
-    cache = CacheManager(redis_client)
+def cache_manager(redis_client):
+    return CacheManager(redis_client)
+
+
+@pytest.fixture
+def device_manager(cache_manager):
 
     return DeviceManager(
         db=MagicMock(),
-        cache=cache,
+        cache=cache_manager,
     )
 
 
 @pytest.fixture
-def profile_manager(redis_client):
-    cache = CacheManager(redis_client)
+def profile_manager(cache_manager):
 
     return ProfileManager(
         db=MagicMock(),
-        cache=cache,
+        cache=cache_manager,
     )
 
 

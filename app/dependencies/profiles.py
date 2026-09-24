@@ -7,11 +7,15 @@ from app.services.cache_manager import CacheManager
 from app.services.profiles_manager import ProfileManager
 
 
+def get_cache_manager(request: Request):
+    return CacheManager(request.app.state.redis)
+
+
 def get_profile_manager(
-    request: Request,
     session: AsyncSession = Depends(get_async_session),
+    cache: CacheManager = Depends(get_cache_manager),
 ) -> ProfileManager:
-    return ProfileManager(session, CacheManager(request.app.state.redis))
+    return ProfileManager(session, cache)
 
 
 async def get_current_profile(
