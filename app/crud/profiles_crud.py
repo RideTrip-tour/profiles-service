@@ -28,7 +28,7 @@ async def _update_profile(
 async def _create_new_profile(
     db: AsyncSession, profile_data: dict[str, Any]
 ) -> Profile:
-    new_profile = Profile(
+    created_profile = Profile(
         settings=ProfileSettings(
             show_profile=True,
             show_name_in_reviews=True,
@@ -38,14 +38,15 @@ async def _create_new_profile(
         ),
         **profile_data,
     )
-    db.add(new_profile)
+    db.add(created_profile)
     await db.commit()
-    await db.refresh(new_profile)
+
+    new_profile = await _find_by_id(db, created_profile.id)
 
     return new_profile
 
 
-async def _find_by_id(db: AsyncSession, profile_id: int):
+async def _find_by_id(db: AsyncSession, profile_id: int) -> Profile | None:
     return (
         await db.execute(
             select(Profile)
@@ -55,7 +56,7 @@ async def _find_by_id(db: AsyncSession, profile_id: int):
     ).scalar_one_or_none()
 
 
-async def _find_by_user_id(db: AsyncSession, user_id: int):
+async def _find_by_user_id(db: AsyncSession, user_id: int) -> Profile | None:
     return (
         await db.execute(
             select(Profile)
