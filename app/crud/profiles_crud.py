@@ -42,7 +42,7 @@ async def _create_new_profile(
     await db.commit()
 
     new_profile = await _find_by_id(db, created_profile.id)
-    
+
     return new_profile
 
 
