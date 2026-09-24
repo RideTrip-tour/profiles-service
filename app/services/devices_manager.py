@@ -1,6 +1,5 @@
 import logging
 
-from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.devices_crud import (
@@ -16,15 +15,15 @@ from app.crud.devices_crud import (
     get_devices as crud_get_devices,
 )
 from app.db.models import ProfileDevice
-from config import settings
+from app.services.cache_manager import CacheManager
 
 logger = logging.getLogger(__name__)
 
 
 class DeviceManager:
-    def __init__(self, db: AsyncSession, redis_client: Redis):
+    def __init__(self, db: AsyncSession, cache: CacheManager):
         self.db = db
-        self.redis_client = redis_client
+        self.cache = cache
 
     async def register_device(
         self,
@@ -41,8 +40,8 @@ class DeviceManager:
         повторная регистрация одного устройства в течение TTL (300 c) не выполняет
         операцию с базой данных.
         """
-        key = self._get_cache_key(profile_id, device_id)
-        cached_device_seen = await self.redis_client.get(key)
+        key = self.cache.device_keys.get_device(profile_id, device_id)
+        cached_device_seen = await self.cache.get(key)
         if cached_device_seen is None:
             logger.debug(
                 "Device cache miss: profile_id=%s device_id=%s",
@@ -62,10 +61,11 @@ class DeviceManager:
                 profile_id,
                 device_id,
             )
-            await self._set_cached_device(
-                profile_id=profile_id,
-                device_id=device_id,
-                key=key,
+            await self.cache.set(key=key, value=f"{profile_id}-{device_id}")
+            logger.debug(
+                "Device cached: profile_id=%s device_id=%s",
+                profile_id,
+                device_id,
             )
         logger.debug(
             "Device cache hit: profile_id=%s device_id=%s",
@@ -85,28 +85,11 @@ class DeviceManager:
     async def delete_device(self, profile_id: int, device_id: str) -> None:
         deleted = await crud_delete_device(self.db, profile_id, device_id)
         if deleted:
-            await self.redis_client.delete(self._get_cache_key(profile_id, device_id))
+            await self.cache.delete(
+                self.cache.device_keys.get_device(profile_id, device_id)
+            )
             logger.info(
                 "Device deleted: profile_id=%s device_id=%s",
                 profile_id,
                 device_id,
             )
-
-    @staticmethod
-    def _get_cache_key(profile_id: int, device_id: str) -> str:
-        return f"profile_service:device:{profile_id}:{device_id}"
-
-    async def _set_cached_device(
-        self,
-        profile_id: int,
-        device_id: str,
-        key: str,
-    ) -> None:
-        await self.redis_client.set(
-            key, f"{profile_id}-{device_id}", ex=settings.redis_ttl
-        )
-        logger.debug(
-            "Device cached: profile_id=%s device_id=%s",
-            profile_id,
-            device_id,
-        )

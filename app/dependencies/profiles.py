@@ -1,15 +1,21 @@
-from fastapi import Depends
+from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_async_session
 from app.dependencies.auth import get_current_profile_id
+from app.services.cache_manager import CacheManager
 from app.services.profiles_manager import ProfileManager
 
 
-async def get_profile_manager(
+def get_cache_manager(request: Request):
+    return CacheManager(request.app.state.redis)
+
+
+def get_profile_manager(
     session: AsyncSession = Depends(get_async_session),
+    cache: CacheManager = Depends(get_cache_manager),
 ) -> ProfileManager:
-    return ProfileManager(session)
+    return ProfileManager(session, cache)
 
 
 async def get_current_profile(
