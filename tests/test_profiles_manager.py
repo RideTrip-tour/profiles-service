@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 
+import httpx
 import pytest
 from fastapi import HTTPException
 
@@ -30,10 +31,10 @@ async def test_create_profile_raises_conflict_when_profile_exists(
         "app.services.profiles_manager.crud_create_profile",
         fake_create_profile,
     )
+    profile_in = ProfileCreate(first_name="Ann")
 
     with pytest.raises(HTTPException) as exc_info:
-        await profile_manager.create_profile(7, ProfileCreate(first_name="Ann"))
-
+        await profile_manager.create_profile(7, profile_in)
     assert exc_info.value.status_code == 409
     assert exc_info.value.detail == "Profile already exists"
 
@@ -88,10 +89,13 @@ async def test_admin_create_profile_raises_conflict_when_profile_exists(
         fake_create_profile,
     )
 
+    profile_in = AdminProfileCreate(
+        user_id=7,
+        first_name="Ann",
+    )
+
     with pytest.raises(HTTPException) as exc_info:
-        await profile_manager.admin_create_profile(
-            AdminProfileCreate(user_id=7, first_name="Ann")
-        )
+        await profile_manager.admin_create_profile(profile_in)
 
     assert exc_info.value.status_code == 409
     assert exc_info.value.detail == "Profile already exists"
@@ -193,13 +197,98 @@ async def test_update_profile_raises_not_found_when_crud_returns_none(
         fake_update_profile,
     )
 
+    payload = ProfileUpdate(first_name="Updated")
+
     with pytest.raises(HTTPException) as exc_info:
-        await profile_manager.update_profile_by_user_id(
-            7, ProfileUpdate(first_name="Updated")
-        )
+        await profile_manager.update_profile_by_user_id(7, payload)
 
     assert exc_info.value.status_code == 404
     assert exc_info.value.detail == "Profile not found"
+
+
+@pytest.mark.asyncio
+async def test_update_profile_validates_country_and_city(monkeypatch, profile_manager):
+    updated_profile = SimpleNamespace(
+        id=1,
+        user_id=7,
+        country_id=10,
+        city_id=20,
+    )
+
+    checked = []
+
+    async def fake_check_country_exists(country_id):
+        checked.append(("country", country_id))
+
+    async def fake_check_city_exists(city_id):
+        checked.append(("city", city_id))
+
+    async def fake_update_profile(db, user_id, payload):
+        assert user_id == 7
+        assert payload.country_id == 10
+        assert payload.city_id == 20
+        return updated_profile
+
+    monkeypatch.setattr(
+        profile_manager.location_client,
+        "check_country_exists",
+        fake_check_country_exists,
+    )
+    monkeypatch.setattr(
+        profile_manager.location_client,
+        "check_city_exists",
+        fake_check_city_exists,
+    )
+    monkeypatch.setattr(
+        "app.services.profiles_manager.crud_update_profile_by_user_id",
+        fake_update_profile,
+    )
+
+    result = await profile_manager.update_profile_by_user_id(
+        7,
+        ProfileUpdate(country_id=10, city_id=20),
+    )
+
+    assert result is updated_profile
+    assert checked == [
+        ("country", 10),
+        ("city", 20),
+    ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("field", "check_method", "value"),
+    [
+        ("country_id", "check_country_exists", 10),
+        ("city_id", "check_city_exists", 20),
+    ],
+)
+async def test_update_profile_raises_not_found_for_missing_location(
+    monkeypatch,
+    profile_manager,
+    field,
+    check_method,
+    value,
+):
+    async def fake_check_exists(location_id):
+        raise ValueError(f"Reference with id={location_id} not found")
+
+    monkeypatch.setattr(
+        profile_manager.location_client,
+        check_method,
+        fake_check_exists,
+    )
+    payload = ProfileUpdate(**{field: value})
+
+    with pytest.raises(HTTPException) as exc_info:
+        await profile_manager.update_profile_by_user_id(
+            7,
+            payload=payload,
+        )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == (f"Reference with id={value} not found")
 
 
 @pytest.mark.asyncio
@@ -248,6 +337,9 @@ async def test_add_favorite_location_returns_created_location(
         location_id=10,
     )
 
+    async def fake_check_location_exists(location_id):
+        assert location_id == 10
+
     async def fake_get_or_create_favorite_location(
         db,
         user_id,
@@ -256,6 +348,12 @@ async def test_add_favorite_location_returns_created_location(
         assert user_id == 7
         assert location_id == 10
         return favorite_location
+
+    monkeypatch.setattr(
+        profile_manager.location_client,
+        "check_location_exists",
+        fake_check_location_exists,
+    )
 
     monkeypatch.setattr(
         "app.services.profiles_manager.crud_get_or_create_favorite_location",
@@ -267,24 +365,27 @@ async def test_add_favorite_location_returns_created_location(
 
 
 @pytest.mark.asyncio
-async def test_add_favorite_location_raises_not_found_when_location_missing(
+async def test_add_favorite_location_raises_http_error_when_location_missing(
     monkeypatch, profile_manager
 ):
-    async def fake_get_or_create_favorite_location(
-        db,
-        user_id,
-        location_id,
-    ):
-        return None
+    async def fake_check_location_exists(location_id):
+        raise httpx.HTTPStatusError(
+            "404 Not Found",
+            request=httpx.Request(
+                "GET",
+                f"http://test/api/locations/{location_id}",
+            ),
+            response=httpx.Response(404),
+        )
 
     monkeypatch.setattr(
-        "app.services.profiles_manager.crud_get_or_create_favorite_location",
-        fake_get_or_create_favorite_location,
+        profile_manager.location_client,
+        "check_location_exists",
+        fake_check_location_exists,
     )
-    with pytest.raises(HTTPException) as exc_info:
+
+    with pytest.raises(httpx.HTTPStatusError):
         await profile_manager.add_favorite_location(7, 10)
-    assert exc_info.value.status_code == 404
-    assert exc_info.value.detail == "Not found"
 
 
 @pytest.mark.asyncio

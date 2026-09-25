@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
 
 os.environ["DEBUG"] = "false"
 
+from app.clients.locations_client import LocationClient
 from app.dependencies.profiles import get_profile_manager
 from app.services.cache_manager import CacheManager
 from app.services.devices_manager import DeviceManager
@@ -101,6 +102,11 @@ def cache_manager(redis_client):
 
 
 @pytest.fixture
+def location_client():
+    return LocationClient()
+
+
+@pytest.fixture
 def device_manager(cache_manager):
 
     return DeviceManager(
@@ -110,11 +116,10 @@ def device_manager(cache_manager):
 
 
 @pytest.fixture
-def profile_manager(cache_manager):
+def profile_manager(cache_manager, location_client):
 
     return ProfileManager(
-        db=MagicMock(),
-        cache=cache_manager,
+        db=MagicMock(), cache=cache_manager, location_client=location_client
     )
 
 

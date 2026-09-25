@@ -12,6 +12,13 @@ class Settings(BaseSettings):
     debug: bool = False
 
     # =========================
+    # Gateway
+    # =========================
+    gateway_url: str = "http://gateway:8000"
+    service_id: str = "auth"
+    service_token: str = ""
+
+    # =========================
     # Database
     # =========================
     db_host: str = Field(validation_alias="DB_PROFILE_SERVICE_HOST", default="postgres")
