@@ -17,8 +17,10 @@ if str(ROOT) not in sys.path:
 os.environ["DEBUG"] = "false"
 
 from app.dependencies.profiles import get_profile_manager
+from app.services.cache_manager import CacheManager
 from app.services.devices_manager import DeviceManager
-from app.services.profile_cache import ProfileIDManager
+from app.services.profiles_manager import ProfileManager
+from app.clients.locations_client import LocationClient
 from main import create_app
 
 INVALID_PROFILE_FIELDS = [
@@ -95,18 +97,30 @@ def today():
 
 
 @pytest.fixture
-def device_manager(redis_client):
+def cache_manager(redis_client):
+    return CacheManager(redis_client)
+
+
+@pytest.fixture
+def location_client():
+    return LocationClient()
+
+@pytest.fixture
+def device_manager(cache_manager):
+
     return DeviceManager(
         db=MagicMock(),
-        redis_client=redis_client,
+        cache=cache_manager,
     )
 
 
 @pytest.fixture
-def profile_id_manager(redis_client):
-    return ProfileIDManager(
+def profile_manager(cache_manager, location_client):
+
+    return ProfileManager(
         db=MagicMock(),
-        redis_client=redis_client,
+        cache=cache_manager,
+        location_client=location_client
     )
 
 

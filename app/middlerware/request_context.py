@@ -5,12 +5,12 @@ from typing import TypedDict
 
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
-from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import AsyncSessionLocal
+from app.services.cache_manager import CacheManager
 from app.services.devices_manager import DeviceManager
-from app.services.profile_cache import ProfileIDManager
+from app.services.profiles_manager import ProfileManager
 from app.utils.converters import convert_value_to_int
 
 logger = logging.getLogger(__name__)
@@ -63,9 +63,9 @@ def _unauthorized_response(detail: str = "Unauthorized") -> JSONResponse:
 
 
 async def _get_profile_id(
-    session: AsyncSession, redis_client: Redis, user_id: int
+    session: AsyncSession, cache: CacheManager, user_id: int
 ) -> int | None:
-    profile_manager = ProfileIDManager(db=session, redis_client=redis_client)
+    profile_manager = ProfileManager(db=session, cache=cache)
     return await profile_manager.get_profile_id(user_id=user_id)
 
 
@@ -82,9 +82,9 @@ def _get_device_from_headers(request: Request) -> DeviceInfo | None:
 
 
 async def _register_device(
-    request: Request, session: AsyncSession, redis_client: Redis, profile_id: int
+    request: Request, session: AsyncSession, cache: CacheManager, profile_id: int
 ) -> None:
-    device_manager = DeviceManager(db=session, redis_client=redis_client)
+    device_manager = DeviceManager(db=session, cache=cache)
     device_info = _get_device_from_headers(request)
     if device_info is not None:
         await device_manager.register_device(
@@ -129,11 +129,11 @@ async def profile_context_middleware(request: Request, call_next):
     if getattr(request.state, "user", None) is not None:
         user_id = request.state.user.get("id")
         async with AsyncSessionLocal() as session:
-            redis_client = request.app.state.redis
-            profile_id = await _get_profile_id(session, redis_client, user_id)
+            cahce = CacheManager(request.app.state.redis)
+            profile_id = await _get_profile_id(session, cahce, user_id)
             if profile_id is None:
                 logger.warning("Profile not found for user_id=%s", user_id)
                 return _unauthorized_response(detail="Profile not found")
-            await _register_device(request, session, redis_client, profile_id)
+            await _register_device(request, session, cahce, profile_id)
             request.state.user["profile_id"] = profile_id
     return await call_next(request)

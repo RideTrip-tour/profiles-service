@@ -120,6 +120,14 @@ class StubProfileManager:
 
         return self.profile_settings
 
+    async def get_profile_id_or_raise(self, user_id):
+        self.calls.append(("get_profile_id_or_raise", user_id))
+        return 8
+
+    async def get_show_profile(self, profile_id):
+        self.calls.append(("get_show_profile", profile_id))
+        return self.profile_settings.show_profile
+
 
 @pytest.mark.asyncio
 async def test_create_profile_uses_current_user_id(
@@ -146,7 +154,10 @@ async def test_get_profile_by_id_returns_forbidden_for_another_user(
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"detail": "User has hidden their profile information"}
-    assert manager.calls == [("get_profile_by_user_id", 8)]
+    assert manager.calls == [
+        ("get_profile_id_or_raise", 8),
+        ("get_show_profile", 8),
+    ]
 
 
 @pytest.mark.asyncio
@@ -170,6 +181,8 @@ async def test_get_profile_by_id_returns_profile_for_visible_profile(
     assert response.json()["id"] == 1
     assert response.json()["user_id"] == 8
     assert manager.calls == [
+        ("get_profile_id_or_raise", 8),
+        ("get_show_profile", 8),
         ("get_profile_by_user_id", 8),
     ]
 
@@ -245,19 +258,23 @@ async def test_delete_profile_by_id_returns_no_content_for_owner(
         (
             "/api/profile/me/favorite-locations",
             "app.routes.profiles_routes.get_current_user_id",
-            ("get_favorite_location", 7),
+            [("get_favorite_location", 7)],
         ),
         (
             "/api/profile/7/favorite-locations",
             "app.dependencies.auth.get_current_user_id",
-            ("get_profile_by_user_id", 7),
+            [
+                ("get_profile_id_or_raise", 7),
+                ("get_show_profile", 8),
+                ("get_profile_by_user_id", 7),
+            ],
         ),
     ],
 )
 async def test_get_favorite_locations(
     client, override_manager, monkeypatch, url, patch_target, expected_call
 ):
-    manager = override_manager(StubProfileManager())
+    manager = override_manager(StubProfileManager(SimpleNamespace(show_profile=True)))
     monkeypatch.setattr(patch_target, lambda _: 7)
     response = await client.get(url)
     assert response.status_code == status.HTTP_200_OK
@@ -273,7 +290,7 @@ async def test_get_favorite_locations(
             },
         ]
     }
-    assert manager.calls == [expected_call]
+    assert manager.calls == expected_call
 
 
 @pytest.mark.asyncio
@@ -292,7 +309,7 @@ async def test_get_favorite_locations_by_user_id_returns_forbidden(
     )
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"detail": "User has hidden their information"}
-    assert manager.calls == [("get_profile_by_user_id", 8)]
+    assert manager.calls == [("get_profile_id_or_raise", 8), ("get_show_profile", 8)]
 
 
 @pytest.mark.asyncio
@@ -328,6 +345,8 @@ async def test_get_favorite_locations_by_user_id_returns_locations_for_visible_p
         ]
     }
     assert manager.calls == [
+        ("get_profile_id_or_raise", 8),
+        ("get_show_profile", 8),
         ("get_profile_by_user_id", 8),
     ]
 
