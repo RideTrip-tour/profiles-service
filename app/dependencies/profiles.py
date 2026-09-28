@@ -22,7 +22,12 @@ def get_profile_manager(
     cache: CacheManager = Depends(get_cache_manager),
     location_client: LocationClient = Depends(get_location_client),
 ) -> ProfileManager:
-    return ProfileManager(session, cache=cache, location_client=location_client, user_context=request.state.user_context)
+    return ProfileManager(
+        session,
+        cache=cache,
+        location_client=location_client,
+        user_context=request.state.user_context,
+    )
 
 
 async def get_current_profile(

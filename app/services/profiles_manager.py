@@ -65,7 +65,11 @@ T = TypeVar("T")
 
 class ProfileManager:
     def __init__(
-        self, db: AsyncSession, cache: CacheManager, location_client: LocationClient, user_context: str | None
+        self,
+        db: AsyncSession,
+        cache: CacheManager,
+        location_client: LocationClient,
+        user_context: str | None,
     ):
         self.db = db
         self.cache = cache
@@ -113,9 +117,13 @@ class ProfileManager:
     async def _validate_city_country(self, payload: ProfileUpdate) -> None:
         try:
             if payload.country_id is not None:
-                await self.location_client.check_country_exists(payload.country_id, self.user_context)
+                await self.location_client.check_country_exists(
+                    payload.country_id, self.user_context
+                )
             if payload.city_id is not None:
-                await self.location_client.check_city_exists(payload.city_id, self.user_context)
+                await self.location_client.check_city_exists(
+                    payload.city_id, self.user_context
+                )
         except ValueError as exc:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

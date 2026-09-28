@@ -5,8 +5,8 @@ from typing import TypedDict
 
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi_users.jwt import generate_jwt
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import AsyncSessionLocal
 from app.services.cache_manager import CacheManager
@@ -48,7 +48,7 @@ def _get_user_from_claims(claims_header: str) -> dict:
 
 def _create_user_context_token(claims: dict) -> str:
     data = {
-        "sub":str(claims["sub"]),
+        "sub": str(claims["sub"]),
         "is_active": bool(claims["is_active"]),
         "is_superuser": bool(claims["is_superuser"]),
         "aud": settings.gateway_name,
