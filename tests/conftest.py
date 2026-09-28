@@ -119,7 +119,10 @@ def device_manager(cache_manager):
 def profile_manager(cache_manager, location_client):
 
     return ProfileManager(
-        db=MagicMock(), cache=cache_manager, location_client=location_client
+        db=MagicMock(),
+        cache=cache_manager,
+        location_client=location_client,
+        user_context="test-jwt",
     )
 
 

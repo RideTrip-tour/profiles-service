@@ -21,7 +21,7 @@ async def test_check_city_exists_does_not_raise_for_existing_city(
 
     monkeypatch.setattr(location_client.client, "request", fake_request)
 
-    await location_client.check_city_exists(10)
+    await location_client.check_city_exists(10, "test-jwt")
 
 
 @pytest.mark.asyncio
@@ -46,7 +46,7 @@ async def test_check_city_exists_raises_value_error_for_missing_city(
         ValueError,
         match="Reference with id=10 not found",
     ):
-        await location_client.check_city_exists(10)
+        await location_client.check_city_exists(10, "test-jwt")
 
 
 @pytest.mark.asyncio
@@ -67,6 +67,6 @@ async def test_check_location_exists_raises_http_error_for_missing_location(
     monkeypatch.setattr(location_client.client, "request", fake_request)
 
     with pytest.raises(httpx.HTTPStatusError) as exc_info:
-        await location_client.check_location_exists(10)
+        await location_client.check_location_exists(10, "test-jwt")
 
     assert exc_info.value.response.status_code == 404

@@ -48,7 +48,7 @@ def _get_user_from_claims(claims_header: str) -> dict:
 
 def _create_user_context_token(claims: dict) -> str:
     data = {
-        "sub": str(claims["sub"]),
+        "sub": str(claims["id"]),
         "is_active": bool(claims["is_active"]),
         "is_superuser": bool(claims["is_superuser"]),
         "aud": settings.gateway_name,
@@ -68,7 +68,10 @@ def _get_user_from_headers(request: Request) -> tuple[dict | None, str | None]:
 
     if claims_header:
         claims = _get_user_from_claims(claims_header)
-        return claims, _create_user_context_token(claims)
+        return (
+            claims,
+            None if claims.get("id") is None else _create_user_context_token(claims),
+        )
     if user_id_header:
         return {"id": user_id_header}, None
     return None, None
