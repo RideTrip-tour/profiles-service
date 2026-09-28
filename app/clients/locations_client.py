@@ -1,10 +1,9 @@
-import time
 import logging
+import time
 
 import httpx
 
 from config import settings
-
 
 logger = logging.getLogger(__name__)
 
@@ -53,11 +52,11 @@ class LocationClient:
         )
 
     def _get_headers(self) -> dict[str, str]:
-            return {
-                "X-Service-ID": settings.service_id,
-                "X-Service-Token": settings.service_token,
-            }
-    
+        return {
+            "X-Service-ID": settings.service_id,
+            "X-Service-Token": settings.service_token,
+        }
+
     async def _request(
         self,
         method: str,
