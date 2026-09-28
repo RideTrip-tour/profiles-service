@@ -1,6 +1,12 @@
+import time
+import logging
+
 import httpx
 
 from config import settings
+
+
+logger = logging.getLogger(__name__)
 
 
 class LocationClient:
@@ -23,11 +29,11 @@ class LocationClient:
         path: str,
         reference_id: int,
     ) -> None:
-        response = await self.client.get(
-            path,
+        response = await self._request(
+            method="GET",
+            path=path,
             params={"id": reference_id},
         )
-        response.raise_for_status()
 
         if not response.json()["items"]:
             raise ValueError(f"Reference with id={reference_id} not found")
@@ -41,8 +47,58 @@ class LocationClient:
         )
 
     async def check_location_exists(self, location_id: int) -> None:
-        response = await self.client.get(f"/api/locations/{location_id}")
-        response.raise_for_status()
+        await self._request(
+            method="GET",
+            path=f"/api/locations/{location_id}",
+        )
+
+    def _get_headers(self) -> dict[str, str]:
+            return {
+                "X-Service-ID": settings.service_id,
+                "X-Service-Token": settings.service_token,
+            }
+    
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        params: dict[str, int] | None = None,
+    ) -> httpx.Response:
+        started_at = time.monotonic()
+
+        logger.info(
+            "Gateway request started: %s: %s",
+            method,
+            path,
+        )
+
+        try:
+            response = await self.client.request(
+                method,
+                path,
+                headers=self._get_headers(),
+                params=params,
+            )
+            elapsed = time.monotonic() - started_at
+            logger.info(
+                "Gateway request completed: %s: %s -> %s in %s s",
+                method,
+                path,
+                response.status_code,
+                elapsed,
+            )
+            response.raise_for_status()
+            return response
+        except Exception:
+            elapsed = time.monotonic() - started_at
+
+            logger.exception(
+                "Gateway request failed: %s: %s in %s s",
+                method,
+                path,
+                elapsed,
+            )
+            raise
 
     async def close(self) -> None:
         await self.client.aclose()
