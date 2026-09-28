@@ -88,7 +88,7 @@ async def get_favorite_locations_by_user_id(
         await manager.get_profile_id_or_raise(user_id)
     )
     if not can_view_profile(request, user_id, show_profile):
-        return ProfileHiddenResponse(detail="User has hidden their information")
+        return ProfileHiddenResponse(detail="Профиль скрыт")
     profile = await manager.get_profile_by_user_id(user_id)
     return FavoriteLocationsResponse(location_ids=profile.favorites)
 
@@ -103,7 +103,7 @@ async def get_profile_by_id(
         await manager.get_profile_id_or_raise(user_id)
     )
     if not can_view_profile(request, user_id, show_profile):
-        return ProfileHiddenResponse(detail="User has hidden their profile information")
+        return ProfileHiddenResponse(detail="Профиль скрыт")
     profile = await manager.get_profile_by_user_id(user_id)
     return profile
 
