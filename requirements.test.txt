@@ -32,6 +32,8 @@ click==8.5.0
     #   uvicorn
 fastapi==0.135.2
     # via -r requirements.txt
+fastapi-users==15.0.5
+    # via -r requirements.in
 greenlet==3.3.2
     # via
     #   -r requirements.txt
