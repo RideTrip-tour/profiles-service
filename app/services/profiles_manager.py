@@ -65,11 +65,12 @@ T = TypeVar("T")
 
 class ProfileManager:
     def __init__(
-        self, db: AsyncSession, cache: CacheManager, location_client: LocationClient
+        self, db: AsyncSession, cache: CacheManager, location_client: LocationClient, user_context: str | None
     ):
         self.db = db
         self.cache = cache
         self.location_client = location_client
+        self.user_context = user_context
 
     async def create_profile(self, user_id: int, profile_in: ProfileCreate):
         existing_profile = await crud_get_profile_by_user_id(self.db, user_id)
@@ -112,9 +113,9 @@ class ProfileManager:
     async def _validate_city_country(self, payload: ProfileUpdate) -> None:
         try:
             if payload.country_id is not None:
-                await self.location_client.check_country_exists(payload.country_id)
+                await self.location_client.check_country_exists(payload.country_id, self.user_context)
             if payload.city_id is not None:
-                await self.location_client.check_city_exists(payload.city_id)
+                await self.location_client.check_city_exists(payload.city_id, self.user_context)
         except ValueError as exc:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -179,7 +180,7 @@ class ProfileManager:
         self._raise_not_found(deleted)
 
     async def add_favorite_location(self, user_id: int, location_id: int):
-        await self.location_client.check_location_exists(location_id)
+        await self.location_client.check_location_exists(location_id, self.user_context)
         favorite_location = await crud_get_or_create_favorite_location(
             self.db,
             user_id,

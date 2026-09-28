@@ -6,12 +6,14 @@ from typing import TypedDict
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi_users.jwt import generate_jwt
 
 from app.db.database import AsyncSessionLocal
 from app.services.cache_manager import CacheManager
 from app.services.devices_manager import DeviceManager
 from app.services.profiles_manager import ProfileManager
 from app.utils.converters import convert_value_to_int
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -44,15 +46,32 @@ def _get_user_from_claims(claims_header: str) -> dict:
         )
 
 
-def _get_user_from_headers(request: Request) -> dict | None:
+def _create_user_context_token(claims: dict) -> str:
+    data = {
+        "sub":str(claims["sub"]),
+        "is_active": bool(claims["is_active"]),
+        "is_superuser": bool(claims["is_superuser"]),
+        "aud": settings.gateway_name,
+    }
+
+    return generate_jwt(
+        data,
+        settings.jwt_secret,
+        settings.access_token_expire_sec,
+        algorithm="HS256",
+    )
+
+
+def _get_user_from_headers(request: Request) -> tuple[dict | None, str | None]:
     claims_header = request.headers.get("x-user-claims")
     user_id_header = request.headers.get("x-user-id")
 
     if claims_header:
-        return _get_user_from_claims(claims_header)
+        claims = _get_user_from_claims(claims_header)
+        return claims, _create_user_context_token(claims)
     if user_id_header:
-        return {"id": user_id_header}
-    return None
+        return {"id": user_id_header}, None
+    return None, None
 
 
 def _unauthorized_response(detail: str = "Unauthorized") -> JSONResponse:
@@ -102,12 +121,12 @@ async def user_context_middleware(request: Request, call_next):
     """
     Восстанавливает request.state.user из заголовков, которые проставляет gateway.
 
-    Ожидаемые заголовки:
     - X-User-Claims: base64url(JSON) с claims пользователя
     - X-User-ID: fallback, если нужен только идентификатор
     """
+
     if getattr(request.state, "user", None) is None:
-        request.state.user = _get_user_from_headers(request)
+        request.state.user, request.state.user_context = _get_user_from_headers(request)
         if isinstance(request.state.user, dict):
             user_id = convert_value_to_int(
                 request.state.user.get("id") or request.state.user.get("sub")

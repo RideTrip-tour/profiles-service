@@ -17,11 +17,12 @@ def get_cache_manager(request: Request):
 
 
 def get_profile_manager(
+    request: Request,
     session: AsyncSession = Depends(get_async_session),
     cache: CacheManager = Depends(get_cache_manager),
     location_client: LocationClient = Depends(get_location_client),
 ) -> ProfileManager:
-    return ProfileManager(session, cache=cache, location_client=location_client)
+    return ProfileManager(session, cache=cache, location_client=location_client, user_context=request.state.user_context)
 
 
 async def get_current_profile(
