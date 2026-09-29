@@ -51,9 +51,7 @@ def _get_user_from_headers(request: Request) -> dict | None:
     user_id_header = request.headers.get("x-user-id")
 
     if claims_header:
-        claims = _get_user_from_claims(claims_header)
-        user_claims.set(claims)
-        return claims
+        return _get_user_from_claims(claims_header)
     if user_id_header:
         return {"id": user_id_header}
     return None
@@ -114,6 +112,7 @@ async def user_context_middleware(request: Request, call_next):
 
     if getattr(request.state, "user", None) is None:
         request.state.user = _get_user_from_headers(request)
+        user_claims.set(request.state.user)
         if isinstance(request.state.user, dict):
             user_id = convert_value_to_int(
                 request.state.user.get("id") or request.state.user.get("sub")
