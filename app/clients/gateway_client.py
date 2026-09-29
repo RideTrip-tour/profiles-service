@@ -78,7 +78,8 @@ class GatewayClient:
         if claims is None:
             raise RuntimeError("User claims are not available")
         if not all(
-            required_claim in claims for required_claim in ("id", "is_active", "is_superuser")
+            required_claim in claims
+            for required_claim in ("id", "is_active", "is_superuser")
         ):
             raise RuntimeError("Required user claims are not available")
         data = {
@@ -86,7 +87,7 @@ class GatewayClient:
             "is_active": bool(claims["is_active"]),
             "is_superuser": bool(claims["is_superuser"]),
             "aud": settings.gateway_name,
-            "exp": int(time.time()) + settings.access_token_expire_sec
+            "exp": int(time.time()) + settings.access_token_expire_sec,
         }
         return jwt.encode(
             data,
