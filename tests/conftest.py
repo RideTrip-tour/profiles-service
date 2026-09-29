@@ -16,8 +16,9 @@ if str(ROOT) not in sys.path:
 
 os.environ["DEBUG"] = "false"
 
-from app.clients.locations_client import LocationClient
+from app.clients.gateway_client import GatewayClient
 from app.dependencies.profiles import get_profile_manager
+from app.middlerware.context import user_claims
 from app.services.cache_manager import CacheManager
 from app.services.devices_manager import DeviceManager
 from app.services.profiles_manager import ProfileManager
@@ -102,8 +103,8 @@ def cache_manager(redis_client):
 
 
 @pytest.fixture
-def location_client():
-    return LocationClient()
+def gateway_client():
+    return GatewayClient()
 
 
 @pytest.fixture
@@ -116,13 +117,10 @@ def device_manager(cache_manager):
 
 
 @pytest.fixture
-def profile_manager(cache_manager, location_client):
+def profile_manager(cache_manager, gateway_client):
 
     return ProfileManager(
-        db=MagicMock(),
-        cache=cache_manager,
-        location_client=location_client,
-        user_context="test-jwt",
+        db=MagicMock(), cache=cache_manager, gateway_client=gateway_client
     )
 
 
@@ -136,3 +134,16 @@ def profile_settings():
         use_profile_for_recommendations=True,
         use_city_for_tour_matching=False,
     )
+
+
+@pytest.fixture
+def user_context():
+    token = user_claims.set(
+        {
+            "id": 7,
+            "is_active": True,
+            "is_superuser": False,
+        }
+    )
+    yield
+    user_claims.reset(token)

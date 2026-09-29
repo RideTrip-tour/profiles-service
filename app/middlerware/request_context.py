@@ -5,15 +5,15 @@ from typing import TypedDict
 
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
-from fastapi_users.jwt import generate_jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.clients.gateway_client import GatewayClient
 from app.db.database import AsyncSessionLocal
+from app.middlerware.context import user_claims
 from app.services.cache_manager import CacheManager
 from app.services.devices_manager import DeviceManager
 from app.services.profiles_manager import ProfileManager
 from app.utils.converters import convert_value_to_int
-from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -46,35 +46,17 @@ def _get_user_from_claims(claims_header: str) -> dict:
         )
 
 
-def _create_user_context_token(claims: dict) -> str:
-    data = {
-        "sub": str(claims["id"]),
-        "is_active": bool(claims["is_active"]),
-        "is_superuser": bool(claims["is_superuser"]),
-        "aud": settings.gateway_name,
-    }
-
-    return generate_jwt(
-        data,
-        settings.jwt_secret,
-        settings.access_token_expire_sec,
-        algorithm="HS256",
-    )
-
-
-def _get_user_from_headers(request: Request) -> tuple[dict | None, str | None]:
+def _get_user_from_headers(request: Request) -> dict | None:
     claims_header = request.headers.get("x-user-claims")
     user_id_header = request.headers.get("x-user-id")
 
     if claims_header:
         claims = _get_user_from_claims(claims_header)
-        return (
-            claims,
-            None if claims.get("id") is None else _create_user_context_token(claims),
-        )
+        user_claims.set(claims)
+        return claims
     if user_id_header:
-        return {"id": user_id_header}, None
-    return None, None
+        return {"id": user_id_header}
+    return None
 
 
 def _unauthorized_response(detail: str = "Unauthorized") -> JSONResponse:
@@ -87,7 +69,9 @@ def _unauthorized_response(detail: str = "Unauthorized") -> JSONResponse:
 async def _get_profile_id(
     session: AsyncSession, cache: CacheManager, user_id: int
 ) -> int | None:
-    profile_manager = ProfileManager(db=session, cache=cache)
+    profile_manager = ProfileManager(
+        db=session, cache=cache, gateway_client=GatewayClient()
+    )
     return await profile_manager.get_profile_id(user_id=user_id)
 
 
@@ -129,7 +113,7 @@ async def user_context_middleware(request: Request, call_next):
     """
 
     if getattr(request.state, "user", None) is None:
-        request.state.user, request.state.user_context = _get_user_from_headers(request)
+        request.state.user = _get_user_from_headers(request)
         if isinstance(request.state.user, dict):
             user_id = convert_value_to_int(
                 request.state.user.get("id") or request.state.user.get("sub")

@@ -233,7 +233,7 @@ async def test_update_my_profile_returns_422_for_invalid_name(
         json={field: "Ann123"},
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert manager.calls == []
 
 
@@ -428,7 +428,7 @@ async def test_update_my_profile_returns_422_for_too_long_field(
         json={field: value},
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert manager.calls == []
 
 

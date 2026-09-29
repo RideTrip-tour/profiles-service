@@ -2,13 +2,15 @@ import logging
 import time
 
 import httpx
+import jwt
 
+from app.middlerware.context import user_claims
 from config import settings
 
 logger = logging.getLogger(__name__)
 
 
-class LocationClient:
+class GatewayClient:
     _instance = None
 
     def __new__(cls):
@@ -24,51 +26,73 @@ class LocationClient:
             )
 
     async def _check_reference_exists(
-        self, path: str, reference_id: int, user_context: str | None
+        self,
+        path: str,
+        reference_id: int,
     ) -> None:
         response = await self._request(
             method="GET",
             path=path,
             params={"id": reference_id},
-            user_context=user_context,
         )
 
         if not response.json()["items"]:
             raise ValueError(f"Reference with id={reference_id} not found")
 
-    async def check_city_exists(self, city_id: int, user_context: str | None) -> None:
+    async def check_city_exists(
+        self,
+        city_id: int,
+    ) -> None:
         await self._check_reference_exists(
-            "/api/locations/references/cities", city_id, user_context=user_context
+            "/api/locations/references/cities",
+            city_id,
         )
 
-    async def check_country_exists(self, country_id: int, user_context: str) -> None:
+    async def check_country_exists(
+        self,
+        country_id: int,
+    ) -> None:
         await self._check_reference_exists(
-            "/api/locations/references/countries", country_id, user_context=user_context
+            "/api/locations/references/countries",
+            country_id,
         )
 
     async def check_location_exists(
-        self, location_id: int, user_context: str | None
+        self,
+        location_id: int,
     ) -> None:
         await self._request(
             method="GET",
             path=f"/api/locations/{location_id}",
-            user_context=user_context,
         )
 
-    def _get_headers(self, user_context: str | None) -> dict[str, str]:
-        if user_context is None:
-            raise ValueError("User context is required")
+    def _get_headers(self) -> dict[str, str]:
         return {
             "X-Service-ID": settings.service_id,
             "X-Service-Token": settings.service_token,
-            "X-User-Context": user_context,
+            "X-User-Context": self._get_user_context(),
         }
+
+    def _get_user_context(self) -> str:
+        claims = user_claims.get()
+        if claims is None:
+            raise RuntimeError("User claims are not available")
+        data = {
+            "sub": str(claims["id"]),
+            "is_active": bool(claims["is_active"]),
+            "is_superuser": bool(claims["is_superuser"]),
+            "aud": settings.gateway_name,
+        }
+        return jwt.encode(
+            data,
+            settings.jwt_secret,
+            algorithm="HS256",
+        )
 
     async def _request(
         self,
         method: str,
         path: str,
-        user_context: str | None,
         params: dict[str, int] | None = None,
     ) -> httpx.Response:
         started_at = time.monotonic()
@@ -83,7 +107,7 @@ class LocationClient:
             response = await self.client.request(
                 method,
                 path,
-                headers=self._get_headers(user_context),
+                headers=self._get_headers(),
                 params=params,
             )
             elapsed = time.monotonic() - started_at

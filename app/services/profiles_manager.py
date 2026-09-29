@@ -4,7 +4,7 @@ from typing import TypeVar
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.clients.locations_client import LocationClient
+from app.clients.gateway_client import GatewayClient
 from app.crud.favorite_locations_crud import (
     delete_favorite_location as crud_delete_favorite_location,
 )
@@ -68,13 +68,11 @@ class ProfileManager:
         self,
         db: AsyncSession,
         cache: CacheManager,
-        location_client: LocationClient,
-        user_context: str | None,
+        gateway_client: GatewayClient,
     ):
         self.db = db
         self.cache = cache
-        self.location_client = location_client
-        self.user_context = user_context
+        self.gateway_client = gateway_client
 
     async def create_profile(self, user_id: int, profile_in: ProfileCreate):
         existing_profile = await crud_get_profile_by_user_id(self.db, user_id)
@@ -117,13 +115,9 @@ class ProfileManager:
     async def _validate_city_country(self, payload: ProfileUpdate) -> None:
         try:
             if payload.country_id is not None:
-                await self.location_client.check_country_exists(
-                    payload.country_id, self.user_context
-                )
+                await self.gateway_client.check_country_exists(payload.country_id)
             if payload.city_id is not None:
-                await self.location_client.check_city_exists(
-                    payload.city_id, self.user_context
-                )
+                await self.gateway_client.check_city_exists(payload.city_id)
         except ValueError as exc:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -188,7 +182,8 @@ class ProfileManager:
         self._raise_not_found(deleted)
 
     async def add_favorite_location(self, user_id: int, location_id: int):
-        await self.location_client.check_location_exists(location_id, self.user_context)
+
+        await self.gateway_client.check_location_exists(location_id)
         favorite_location = await crud_get_or_create_favorite_location(
             self.db,
             user_id,

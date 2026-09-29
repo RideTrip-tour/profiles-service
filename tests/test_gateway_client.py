@@ -4,8 +4,7 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_check_city_exists_does_not_raise_for_existing_city(
-    location_client,
-    monkeypatch,
+    gateway_client, monkeypatch, user_context
 ):
 
     async def fake_request(method, path, params, headers):
@@ -19,15 +18,14 @@ async def test_check_city_exists_does_not_raise_for_existing_city(
             request=request,
         )
 
-    monkeypatch.setattr(location_client.client, "request", fake_request)
+    monkeypatch.setattr(gateway_client.client, "request", fake_request)
 
-    await location_client.check_city_exists(10, "test-jwt")
+    await gateway_client.check_city_exists(10)
 
 
 @pytest.mark.asyncio
 async def test_check_city_exists_raises_value_error_for_missing_city(
-    location_client,
-    monkeypatch,
+    gateway_client, monkeypatch, user_context
 ):
     async def fake_request(method, path, params, headers):
         request = httpx.Request(
@@ -40,19 +38,18 @@ async def test_check_city_exists_raises_value_error_for_missing_city(
             request=request,
         )
 
-    monkeypatch.setattr(location_client.client, "request", fake_request)
+    monkeypatch.setattr(gateway_client.client, "request", fake_request)
 
     with pytest.raises(
         ValueError,
         match="Reference with id=10 not found",
     ):
-        await location_client.check_city_exists(10, "test-jwt")
+        await gateway_client.check_city_exists(10)
 
 
 @pytest.mark.asyncio
 async def test_check_location_exists_raises_http_error_for_missing_location(
-    location_client,
-    monkeypatch,
+    gateway_client, monkeypatch, user_context
 ):
     async def fake_request(method, path, params, headers):
         request = httpx.Request(
@@ -64,9 +61,8 @@ async def test_check_location_exists_raises_http_error_for_missing_location(
             request=request,
         )
 
-    monkeypatch.setattr(location_client.client, "request", fake_request)
+    monkeypatch.setattr(gateway_client.client, "request", fake_request)
 
     with pytest.raises(httpx.HTTPStatusError) as exc_info:
-        await location_client.check_location_exists(10, "test-jwt")
-
+        await gateway_client.check_location_exists(10)
     assert exc_info.value.response.status_code == 404

@@ -217,10 +217,10 @@ async def test_update_profile_validates_country_and_city(monkeypatch, profile_ma
 
     checked = []
 
-    async def fake_check_country_exists(country_id, user_context):
+    async def fake_check_country_exists(country_id):
         checked.append(("country", country_id))
 
-    async def fake_check_city_exists(city_id, user_context):
+    async def fake_check_city_exists(city_id):
         checked.append(("city", city_id))
 
     async def fake_update_profile(
@@ -234,12 +234,12 @@ async def test_update_profile_validates_country_and_city(monkeypatch, profile_ma
         return updated_profile
 
     monkeypatch.setattr(
-        profile_manager.location_client,
+        profile_manager.gateway_client,
         "check_country_exists",
         fake_check_country_exists,
     )
     monkeypatch.setattr(
-        profile_manager.location_client,
+        profile_manager.gateway_client,
         "check_city_exists",
         fake_check_city_exists,
     )
@@ -275,11 +275,11 @@ async def test_update_profile_raises_not_found_for_missing_location(
     check_method,
     value,
 ):
-    async def fake_check_exists(location_id, user_context):
+    async def fake_check_exists(location_id):
         raise ValueError(f"Reference with id={location_id} not found")
 
     monkeypatch.setattr(
-        profile_manager.location_client,
+        profile_manager.gateway_client,
         check_method,
         fake_check_exists,
     )
@@ -341,7 +341,7 @@ async def test_add_favorite_location_returns_created_location(
         location_id=10,
     )
 
-    async def fake_check_location_exists(location_id, user_context):
+    async def fake_check_location_exists(location_id):
         assert location_id == 10
 
     async def fake_get_or_create_favorite_location(
@@ -354,7 +354,7 @@ async def test_add_favorite_location_returns_created_location(
         return favorite_location
 
     monkeypatch.setattr(
-        profile_manager.location_client,
+        profile_manager.gateway_client,
         "check_location_exists",
         fake_check_location_exists,
     )
@@ -372,7 +372,7 @@ async def test_add_favorite_location_returns_created_location(
 async def test_add_favorite_location_raises_http_error_when_location_missing(
     monkeypatch, profile_manager
 ):
-    async def fake_check_location_exists(location_id, user_context):
+    async def fake_check_location_exists(location_id):
         raise httpx.HTTPStatusError(
             "404 Not Found",
             request=httpx.Request(
@@ -383,7 +383,7 @@ async def test_add_favorite_location_raises_http_error_when_location_missing(
         )
 
     monkeypatch.setattr(
-        profile_manager.location_client,
+        profile_manager.gateway_client,
         "check_location_exists",
         fake_check_location_exists,
     )
