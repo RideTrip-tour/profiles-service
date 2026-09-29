@@ -153,7 +153,7 @@ async def test_get_profile_by_id_returns_forbidden_for_another_user(
     response = await client.get("/api/profile/8")
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {"detail": "User has hidden their profile information"}
+    assert response.json() == {"detail": "Профиль скрыт"}
     assert manager.calls == [
         ("get_profile_id_or_raise", 8),
         ("get_show_profile", 8),
@@ -308,7 +308,7 @@ async def test_get_favorite_locations_by_user_id_returns_forbidden(
         "/api/profile/8/favorite-locations",
     )
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {"detail": "User has hidden their information"}
+    assert response.json() == {"detail": "Профиль скрыт"}
     assert manager.calls == [("get_profile_id_or_raise", 8), ("get_show_profile", 8)]
 
 
