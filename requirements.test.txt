@@ -24,6 +24,7 @@ asyncpg==0.31.0
     # via -r requirements.txt
 certifi==2026.7.22
     # via
+    #   -r requirements.txt
     #   httpcore
     #   httpx
 click==8.5.0
@@ -44,13 +45,15 @@ h11==0.16.0
     #   httpcore
     #   uvicorn
 httpcore==1.0.9
-    # via httpx
+    # via
+    #   -r requirements.txt
+    #   httpx
 httptools==0.8.0
     # via
     #   -r requirements.txt
     #   uvicorn
 httpx==0.28.1
-    # via -r requirements.test.in
+    # via -r requirements.txt
 idna==3.20
     # via
     #   -r requirements.txt
