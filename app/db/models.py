@@ -57,8 +57,8 @@ class Profile(Base):
         default=list,
         server_default=text("'[]'::json"),
     )
-    country: Mapped[str | None] = mapped_column(String(100))
-    city: Mapped[str | None] = mapped_column(String(100))
+    country_id: Mapped[int | None] = mapped_column(Integer)
+    city_id: Mapped[int | None] = mapped_column(Integer)
     citizenship: Mapped[str | None] = mapped_column(String(100))
     currency: Mapped[str | None] = mapped_column(String(10))
     role: Mapped[str] = mapped_column(

@@ -7,7 +7,9 @@ from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.clients.gateway_client import GatewayClient
 from app.db.database import AsyncSessionLocal
+from app.middlerware.context import user_claims
 from app.services.cache_manager import CacheManager
 from app.services.devices_manager import DeviceManager
 from app.services.profiles_manager import ProfileManager
@@ -65,7 +67,9 @@ def _unauthorized_response(detail: str = "Unauthorized") -> JSONResponse:
 async def _get_profile_id(
     session: AsyncSession, cache: CacheManager, user_id: int
 ) -> int | None:
-    profile_manager = ProfileManager(db=session, cache=cache)
+    profile_manager = ProfileManager(
+        db=session, cache=cache, gateway_client=GatewayClient()
+    )
     return await profile_manager.get_profile_id(user_id=user_id)
 
 
@@ -102,12 +106,13 @@ async def user_context_middleware(request: Request, call_next):
     """
     Восстанавливает request.state.user из заголовков, которые проставляет gateway.
 
-    Ожидаемые заголовки:
     - X-User-Claims: base64url(JSON) с claims пользователя
     - X-User-ID: fallback, если нужен только идентификатор
     """
+
     if getattr(request.state, "user", None) is None:
         request.state.user = _get_user_from_headers(request)
+        user_claims.set(request.state.user)
         if isinstance(request.state.user, dict):
             user_id = convert_value_to_int(
                 request.state.user.get("id") or request.state.user.get("sub")

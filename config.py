@@ -10,6 +10,14 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     gateway_name: str = "Gate"
     debug: bool = False
+    access_token_expire_sec: int = 60 * 15
+
+    # =========================
+    # Gateway
+    # =========================
+    gateway_url: str = "http://gateway:8000"
+    service_id: str = "profile"
+    service_token: str = ""
 
     # =========================
     # Database

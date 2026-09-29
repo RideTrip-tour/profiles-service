@@ -19,8 +19,8 @@ class StubProfileManager:
             "birth_date": None,
             "about_me": None,
             "activities": [],
-            "country": None,
-            "city": None,
+            "country_id": None,
+            "city_id": None,
             "citizenship": None,
             "currency": None,
             "created_at": datetime(2024, 1, 1, tzinfo=UTC),
@@ -43,22 +43,30 @@ class StubProfileContextManager:
         return self.profile_id
 
 
+def encode_claims(claims: dict) -> str:
+    return base64.urlsafe_b64encode(json.dumps(claims).encode("utf-8")).decode("ascii")
+
+
 @pytest.mark.asyncio
 async def test_x_user_claims_header_is_restored_into_request_state(
-    client, override_manager, monkeypatch
+    client, override_manager, monkeypatch, gateway_client
 ):
     manager = override_manager(StubProfileManager())
 
     monkeypatch.setattr(
         "app.middlerware.request_context.ProfileManager",
-        lambda db, cache: StubProfileContextManager(
+        lambda db, cache, gateway_client: StubProfileContextManager(
             db=db,
             cache=cache,
         ),
     )
 
-    claims = base64.urlsafe_b64encode(json.dumps({"id": "7"}).encode("utf-8")).decode(
-        "ascii"
+    claims = encode_claims(
+        {
+            "id": "7",
+            "is_active": True,
+            "is_superuser": False,
+        }
     )
 
     response = await client.get(
@@ -72,7 +80,12 @@ async def test_x_user_claims_header_is_restored_into_request_state(
 
 @pytest.mark.asyncio
 async def test_x_user_claims_without_user_id_returns_401(client):
-    claims = base64.urlsafe_b64encode(json.dumps({}).encode("utf-8")).decode("ascii")
+    claims = encode_claims(
+        {
+            "is_active": True,
+            "is_superuser": False,
+        }
+    )
 
     response = await client.get(
         "/api/profile/me",
@@ -84,18 +97,22 @@ async def test_x_user_claims_without_user_id_returns_401(client):
 
 
 @pytest.mark.asyncio
-async def test_profile_not_found_returns_401(client, monkeypatch):
+async def test_profile_not_found_returns_401(client, monkeypatch, gateway_client):
     monkeypatch.setattr(
         "app.middlerware.request_context.ProfileManager",
-        lambda db, cache: StubProfileContextManager(
+        lambda db, cache, gateway_client: StubProfileContextManager(
             db=db,
             cache=cache,
             profile_id=None,
         ),
     )
 
-    claims = base64.urlsafe_b64encode(json.dumps({"id": "7"}).encode("utf-8")).decode(
-        "ascii"
+    claims = encode_claims(
+        {
+            "id": "7",
+            "is_active": True,
+            "is_superuser": False,
+        }
     )
 
     response = await client.get(

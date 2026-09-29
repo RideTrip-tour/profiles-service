@@ -8,16 +8,13 @@ from .constants import (
     MAX_LEN_ABOUT_ME,
     MAX_LEN_ACTIVITIES,
     MAX_LEN_CITIZENSHIP,
-    MAX_LEN_CITY,
-    MAX_LEN_COUNTRY,
     MAX_LEN_CURRENCY,
     MAX_LEN_NAME,
     MIN_LEN_CITIZENSHIP,
-    MIN_LEN_CITY,
-    MIN_LEN_COUNTRY,
     MIN_LEN_CURRENCY,
     MIN_LEN_NAME,
-    PATTERN_CITY,
+    MIN_VALUE_CITY,
+    MIN_VALUE_COUNTRY,
     PATTERN_NAME,
 )
 from .validators.phone_number import normalize_phone_number
@@ -50,15 +47,8 @@ class ProfileBase(BaseModel):
         max_length=MAX_LEN_ACTIVITIES,
         description="External activity identifiers from activities service",
     )
-    country: str | None = Field(
-        default=None, min_length=MIN_LEN_COUNTRY, max_length=MAX_LEN_COUNTRY
-    )
-    city: str | None = Field(
-        default=None,
-        min_length=MIN_LEN_CITY,
-        max_length=MAX_LEN_CITY,
-        pattern=PATTERN_CITY,
-    )
+    country_id: int | None = Field(default=None, gt=MIN_VALUE_COUNTRY)
+    city_id: int | None = Field(default=None, gt=MIN_VALUE_CITY)
     citizenship: str | None = Field(
         default=None, min_length=MIN_LEN_CITIZENSHIP, max_length=MAX_LEN_CITIZENSHIP
     )

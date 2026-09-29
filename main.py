@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 import redis.asyncio as redis
 from fastapi import FastAPI
 
+from app.clients.gateway_client import GatewayClient
 from app.middlerware.request_context import (
     profile_context_middleware,
     user_context_middleware,
@@ -24,6 +25,7 @@ async def lifespan(app: FastAPI):
     app.state.redis = await redis.Redis.from_url(settings.redis_url)
     yield
     await app.state.redis.aclose()
+    await GatewayClient().close()
     logger.info("Service is shutting down...")
 
 
