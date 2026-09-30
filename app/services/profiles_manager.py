@@ -155,8 +155,9 @@ class ProfileManager:
 
     async def update_profile_by_user_id(self, user_id: int, payload: ProfileUpdate):
         await self._validate_city_country(payload)
-        profile = await crud_update_profile_by_user_id(self.db, user_id, payload)
-        self._raise_not_found(profile)
+        profile = self.get_or_raise_not_found(
+            await crud_update_profile_by_user_id(self.db, user_id, payload)
+        )
         logger.info(
             "Profile updated: user_id=%s profile_id=%s",
             user_id,
