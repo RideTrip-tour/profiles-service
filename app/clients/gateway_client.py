@@ -24,6 +24,7 @@ class GatewayClient:
                 base_url=settings.gateway_url,
                 timeout=10.0,
             )
+            logger.debug("Gateway client initialized")
 
     async def _check_reference_exists(
         self,
@@ -37,6 +38,11 @@ class GatewayClient:
         )
 
         if not response.json()["items"]:
+            logger.warning(
+                "Gateway reference not found: path=%s, reference_id=%s",
+                path,
+                reference_id,
+            )
             raise ValueError(f"Reference with id={reference_id} not found")
 
     async def check_city_exists(
@@ -76,11 +82,15 @@ class GatewayClient:
     def _get_user_context(self) -> str:
         claims = user_claims.get()
         if claims is None:
+            logger.error("Failed to build user context: user claims are not available")
             raise RuntimeError("User claims are not available")
         if not all(
             required_claim in claims
             for required_claim in ("id", "is_active", "is_superuser")
         ):
+            logger.error(
+                "Failed to build user context: required user claims are not available"
+            )
             raise RuntimeError("Required user claims are not available")
         data = {
             "sub": str(claims["id"]),
@@ -117,6 +127,7 @@ class GatewayClient:
                 params=params,
             )
             elapsed = time.monotonic() - started_at
+            response.raise_for_status()
             logger.info(
                 "Gateway request completed: %s: %s -> %s in %s s",
                 method,
@@ -124,7 +135,6 @@ class GatewayClient:
                 response.status_code,
                 elapsed,
             )
-            response.raise_for_status()
             return response
         except Exception:
             elapsed = time.monotonic() - started_at
