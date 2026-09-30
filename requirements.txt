@@ -59,6 +59,8 @@ pydantic-core==2.41.5
     # via pydantic
 pydantic-settings==2.13.1
     # via -r requirements.in
+pyjwt==2.15.0
+    # via -r requirements.in
 python-dateutil==2.9.0.post0
     # via -r requirements.in
 python-dotenv==1.2.3
