@@ -6,11 +6,12 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from app.crud.utils import _update_model
 from app.db.models import Profile, ProfileSettings
+from app.schemas.admin_schemas import ProfileCreate as AdminProfileCreate
 from app.schemas.profiles_schemas import ProfileCreate, ProfileUpdate
 
 
-async def _delete_profile(db: AsyncSession, profile: Profile) -> bool:
-    if not profile:
+async def _delete_profile(db: AsyncSession, profile: Profile | None) -> bool:
+    if profile is None:
         return False
 
     await db.delete(profile)
@@ -40,9 +41,9 @@ async def _create_new_profile(
     )
     db.add(created_profile)
     await db.commit()
-
     new_profile = await _find_by_id(db, created_profile.id)
-
+    if new_profile is None:
+        raise RuntimeError("Created profile was not found")
     return new_profile
 
 
@@ -79,7 +80,9 @@ async def create_profile(
     return await _create_new_profile(db, profile_data)
 
 
-async def admin_create_profile(db: AsyncSession, profile_in: ProfileCreate) -> Profile:
+async def admin_create_profile(
+    db: AsyncSession, profile_in: AdminProfileCreate
+) -> Profile:
     profile_data = profile_in.model_dump(exclude_unset=True)
     return await _create_new_profile(db, profile_data)
 
@@ -129,5 +132,6 @@ async def update_profile_by_id(
     db: AsyncSession, profile_id: int, payload: ProfileUpdate
 ) -> Profile | None:
     profile = await _find_by_id(db, profile_id)
-
+    if not profile:
+        return None
     return await _update_profile(db, profile, payload)
