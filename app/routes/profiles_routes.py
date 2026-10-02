@@ -71,7 +71,12 @@ async def get_favorite_locations(
     manager: ProfileManager = Depends(get_profile_manager),
 ):
     return FavoriteLocationsResponse(
-        location_ids=await manager.get_favorite_location(get_current_user_id(request))
+        location_ids=[
+            FavoriteLocationResponse.model_validate(favorite_location)
+            for favorite_location in await manager.get_favorite_location(
+                get_current_user_id(request)
+            )
+        ]
     )
 
 
