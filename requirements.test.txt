@@ -33,6 +33,8 @@ click==8.5.0
     # via
     #   -r requirements.txt
     #   uvicorn
+coverage[toml]==7.16.2
+    # via pytest-cov
 fastapi==0.135.2
     # via -r requirements.txt
 greenlet==3.3.2
@@ -82,7 +84,9 @@ pathspec==1.1.1
 phonenumbers==9.0.37
     # via -r requirements.txt
 pluggy==1.6.0
-    # via pytest
+    # via
+    #   pytest
+    #   pytest-cov
 psycopg2-binary==2.9.11
     # via -r requirements.txt
 pycountry==26.2.16
@@ -106,7 +110,10 @@ pytest==9.0.2
     # via
     #   -r requirements.test.in
     #   pytest-asyncio
+    #   pytest-cov
 pytest-asyncio==1.3.0
+    # via -r requirements.test.in
+pytest-cov==7.1.0
     # via -r requirements.test.in
 python-dateutil==2.9.0.post0
     # via -r requirements.txt
