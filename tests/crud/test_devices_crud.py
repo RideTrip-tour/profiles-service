@@ -43,9 +43,7 @@ async def test_create_or_update_device_creates_new_device(db, result_mock):
 
 
 @pytest.mark.asyncio
-async def test_create_or_update_device_updates_existing_device(
-    db, device, result_mock
-):
+async def test_create_or_update_device_updates_existing_device(db, device, result_mock):
     result_mock.scalar_one_or_none.return_value = device
     db.execute.return_value = result_mock
     result = await create_or_update_device(

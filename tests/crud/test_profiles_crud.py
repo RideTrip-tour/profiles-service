@@ -76,15 +76,15 @@ async def test_create_new_profile_raises_when_profile_not_found(db):
             "app.crud.profiles_crud._find_by_id",
             new=AsyncMock(return_value=None),
         ),
-    ):
-        with pytest.raises(
+        pytest.raises(
             RuntimeError,
             match="Created profile was not found",
-        ):
-            await _create_new_profile(
-                db,
-                {"first_name": "Ann"},
-            )
+        ),
+    ):
+        await _create_new_profile(
+            db,
+            {"first_name": "Ann"},
+        )
 
 
 @pytest.mark.asyncio
@@ -253,17 +253,25 @@ async def test_update_profile_returns_none_when_not_found(
     ],
 )
 async def test_update_profile(
-    db, profile, payload, expected, function, identifier,
+    db,
+    profile,
+    payload,
+    expected,
+    function,
+    identifier,
 ):
-    with patch(
-        "app.crud.profiles_crud._find_by_user_id"
-        if function is update_profile_by_user_id
-        else "app.crud.profiles_crud._find_by_id",
-        new=AsyncMock(return_value=profile),
-    ), patch(
-        "app.crud.profiles_crud._update_profile",
-        new=AsyncMock(return_value=expected),
-    ) as update:
+    with (
+        patch(
+            "app.crud.profiles_crud._find_by_user_id"
+            if function is update_profile_by_user_id
+            else "app.crud.profiles_crud._find_by_id",
+            new=AsyncMock(return_value=profile),
+        ),
+        patch(
+            "app.crud.profiles_crud._update_profile",
+            new=AsyncMock(return_value=expected),
+        ) as update,
+    ):
         result = await function(db, identifier, payload)
 
     assert result is expected

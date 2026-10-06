@@ -16,7 +16,9 @@ def favorite_location():
 
 
 @pytest.mark.asyncio
-async def test_get_favorite_location_returns_locations(db, favorite_location, result_mock):
+async def test_get_favorite_location_returns_locations(
+    db, favorite_location, result_mock
+):
     locations = [favorite_location, MagicMock()]
 
     result_mock.scalars.return_value.all.return_value = locations

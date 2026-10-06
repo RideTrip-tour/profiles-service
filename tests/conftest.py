@@ -4,7 +4,7 @@ from collections.abc import Generator
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
@@ -17,8 +17,8 @@ if str(ROOT) not in sys.path:
 os.environ["DEBUG"] = "false"
 
 
-from app.db.models import ProfileDevice
 from app.clients.gateway_client import GatewayClient
+from app.db.models import ProfileDevice
 from app.dependencies.profiles import get_profile_manager
 from app.middlerware.context import user_claims
 from app.services.cache_manager import CacheManager
@@ -65,6 +65,7 @@ def db():
     db.delete = AsyncMock()
     return db
 
+
 @pytest.fixture
 def payload():
     return MagicMock()
@@ -73,6 +74,7 @@ def payload():
 @pytest.fixture
 def expected():
     return MagicMock()
+
 
 @pytest.fixture
 def result_mock():
@@ -148,9 +150,7 @@ def device_manager(cache_manager, db):
 @pytest.fixture
 def profile_manager(cache_manager, gateway_client, db):
 
-    return ProfileManager(
-        db=db, cache=cache_manager, gateway_client=gateway_client
-    )
+    return ProfileManager(db=db, cache=cache_manager, gateway_client=gateway_client)
 
 
 @pytest.fixture
