@@ -144,6 +144,16 @@ async def test_create_profile_uses_current_user_id(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("method", ["GET", "PATCH", "DELETE"])
+async def test_create_profile_not_allowed(client, method):
+    response = await client.request(method, "/api/profile/create")
+    
+    assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+    assert response.headers["allow"] == "POST"
+    assert response.json() == {"detail": "Method Not Allowed"}
+
+
+@pytest.mark.asyncio
 async def test_get_profile_by_id_returns_forbidden_for_another_user(
     client, override_manager, monkeypatch
 ):
