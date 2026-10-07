@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Request, status
 
 from app.dependencies.auth import (
     can_view_profile,
@@ -36,15 +36,6 @@ async def create_new_profile(
 ):
     user_id = get_current_user_id(request)
     return await manager.create_profile(user_id, payload)
-
-
-@router.api_route("/create", methods=["GET", "PATCH", "DELETE"])
-def create_not_allowed():
-    raise HTTPException(
-        status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
-        detail="Method Not Allowed",
-        headers={"Allow": "POST"},
-    )
 
 
 @router.post(
