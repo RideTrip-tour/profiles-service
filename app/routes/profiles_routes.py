@@ -81,7 +81,7 @@ async def get_favorite_locations(
 
 
 @router.get(
-    "/{user_id}/favorite-locations",
+    "/{user_id:int}/favorite-locations",
     response_model=FavoriteLocationsResponse | ProfileHiddenResponse,
 )
 async def get_favorite_locations_by_user_id(
@@ -98,7 +98,7 @@ async def get_favorite_locations_by_user_id(
     return FavoriteLocationsResponse(location_ids=profile.favorites)
 
 
-@router.get("/{user_id}", response_model=ProfileResponse | ProfileHiddenResponse)
+@router.get("/{user_id:int}", response_model=ProfileResponse | ProfileHiddenResponse)
 async def get_profile_by_id(
     user_id: int,
     request: Request,
@@ -133,7 +133,7 @@ async def delete_profile_by_id(
 
 
 @router.delete(
-    "/me/favorite-locations/{location_id}",
+    "/me/favorite-locations/{location_id:int}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_favorite_location(
