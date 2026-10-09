@@ -4,7 +4,7 @@ from collections.abc import Generator
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
@@ -16,7 +16,9 @@ if str(ROOT) not in sys.path:
 
 os.environ["DEBUG"] = "false"
 
+
 from app.clients.gateway_client import GatewayClient
+from app.db.models import ProfileDevice
 from app.dependencies.profiles import get_profile_manager
 from app.middlerware.context import user_claims
 from app.services.cache_manager import CacheManager
@@ -48,6 +50,35 @@ def app():
     app = create_app()
     app.state.redis = StubRedis()
     return app
+
+
+@pytest.fixture
+def device():
+    return MagicMock(spec=ProfileDevice)
+
+
+@pytest.fixture
+def db():
+    db = MagicMock()
+    db.execute = AsyncMock()
+    db.commit = AsyncMock()
+    db.delete = AsyncMock()
+    return db
+
+
+@pytest.fixture
+def payload():
+    return MagicMock()
+
+
+@pytest.fixture
+def expected():
+    return MagicMock()
+
+
+@pytest.fixture
+def result_mock():
+    return MagicMock()
 
 
 @pytest_asyncio.fixture
@@ -108,20 +139,18 @@ def gateway_client():
 
 
 @pytest.fixture
-def device_manager(cache_manager):
+def device_manager(cache_manager, db):
 
     return DeviceManager(
-        db=MagicMock(),
+        db=db,
         cache=cache_manager,
     )
 
 
 @pytest.fixture
-def profile_manager(cache_manager, gateway_client):
+def profile_manager(cache_manager, gateway_client, db):
 
-    return ProfileManager(
-        db=MagicMock(), cache=cache_manager, gateway_client=gateway_client
-    )
+    return ProfileManager(db=db, cache=cache_manager, gateway_client=gateway_client)
 
 
 @pytest.fixture

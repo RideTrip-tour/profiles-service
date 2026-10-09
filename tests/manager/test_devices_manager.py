@@ -84,8 +84,7 @@ async def test_register_device_uses_correct_cache_key(
 
 
 @pytest.mark.asyncio
-async def test_get_device(device_manager, monkeypatch):
-    device = MagicMock(spec=ProfileDevice)
+async def test_get_device(device_manager, monkeypatch, device):
 
     async def mock_get_device(db, profile_id, device_id):
         assert db is device_manager.db
