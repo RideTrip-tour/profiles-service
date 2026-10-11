@@ -42,7 +42,7 @@ def create_app() -> FastAPI:
     app.middleware("http")(profile_context_middleware)
     app.middleware("http")(user_context_middleware)
 
-    @app.get(f"/{settings.app_name.split('-')[0]}/health")
+    @app.get(f"/api/{settings.app_name.split('-')[0]}/health")
     async def health_check():
         return {"status": "ok"}
 
