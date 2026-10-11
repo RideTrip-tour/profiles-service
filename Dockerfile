@@ -1,6 +1,8 @@
-FROM python:3.12-slim
+FROM python:3.12-alpine
 
-RUN apt-get update && apt-get install -y postgresql-client redis-tools
+RUN apk add --no-cache \
+    postgresql-client \
+    redis
 
 WORKDIR /app
 

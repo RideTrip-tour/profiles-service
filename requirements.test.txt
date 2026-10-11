@@ -135,8 +135,6 @@ starlette==1.6.0
     # via
     #   -r requirements.txt
     #   fastapi
-structlog==25.5.0
-    # via -r requirements.txt
 typing-extensions==4.16.0
     # via
     #   -r requirements.txt
@@ -156,7 +154,7 @@ typing-inspection==0.4.4
     #   fastapi
     #   pydantic
     #   pydantic-settings
-uvicorn[standard]==0.43.0 ; sys_platform != "win32"
+uvicorn[standard]==0.43.0
     # via -r requirements.txt
 uvloop==0.23.0
     # via
