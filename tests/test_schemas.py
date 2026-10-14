@@ -15,6 +15,7 @@ from app.schemas.profiles_schemas import (
     ProfileSettings,
     ProfileSettingsUpdate,
 )
+from app.utils.enums import Gender, SkillLevel
 from tests.conftest import INVALID_PROFILE_FIELDS
 
 
@@ -48,7 +49,8 @@ def make_profile(**overrides):
         "country_id": None,
         "city_id": None,
         "citizenship": None,
-        "currency": None,
+        "gender": Gender.PREFER_NOT_TO_SAY,
+        "skill": None,
         "created_at": datetime(2024, 1, 1, tzinfo=UTC),
         "updated_at": datetime(2024, 1, 1, tzinfo=UTC),
     }
@@ -234,7 +236,6 @@ def test_profile_fields_length_validation(profile_schema, field, value):
         ("city_id", 1),
         ("citizenship", "AB"),
         ("citizenship", "A" * 15),
-        ("currency", "RUB"),
     ],
 )
 def test_profile_fields_accept_valid_length(profile_schema, field, value):
@@ -254,9 +255,10 @@ def test_profile_fields_accept_valid_length(profile_schema, field, value):
         ("country_id", None),
         ("city_id", None),
         ("citizenship", None),
-        ("currency", None),
         ("activities", []),
         ("birth_date", None),
+        ("gender", Gender.PREFER_NOT_TO_SAY),
+        ("skill", None),
     ],
 )
 def test_profile_fields_have_default_values(profile_schema, field, expected):
@@ -317,3 +319,46 @@ def test_profile_settings_update_allows_partial_update():
     assert settings.use_activity_for_recommendations is None
     assert settings.use_profile_for_recommendations is None
     assert settings.use_city_for_tour_matching is None
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        *[("gender", gender) for gender in Gender],
+        *[("skill", skill) for skill in SkillLevel],
+    ],
+)
+def test_profile_accepts_valid_gender_and_skill(profile_schema, field, value):
+    schema, data = profile_schema
+    profile = schema(**{**data, field: value})
+
+    assert getattr(profile, field) == value
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("gender", "Неизвестный"),
+        ("gender", "MALE"),
+        ("skill", "Эксперт"),
+        ("skill", "BEGINNER"),
+    ],
+)
+def test_profile_rejects_invalid_gender_and_skill(profile_schema, field, value):
+    schema, data = profile_schema
+
+    with pytest.raises(ValidationError):
+        schema(**{**data, field: value})
+
+
+def test_profile_response_accepts_gender_and_skill():
+    profile = SimpleNamespace(
+        **make_profile(
+            gender=Gender.MALE,
+            skill=SkillLevel.BEGINNER,
+        )
+    )
+    response = ProfileResponse.model_validate(profile)
+
+    assert response.gender == Gender.MALE
+    assert response.skill == SkillLevel.BEGINNER
