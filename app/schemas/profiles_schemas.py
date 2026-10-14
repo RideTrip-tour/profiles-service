@@ -1,23 +1,29 @@
 from datetime import UTC, date, datetime
+from typing import Annotated
 
-import pycountry
 from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.utils.enums import Gender, SkillLevel
 
 from .constants import (
     MAX_LEN_ABOUT_ME,
     MAX_LEN_ACTIVITIES,
+    MAX_LEN_ACTIVITY,
     MAX_LEN_CITIZENSHIP,
-    MAX_LEN_CURRENCY,
     MAX_LEN_NAME,
+    MIN_LEN_ACTIVITY,
     MIN_LEN_CITIZENSHIP,
-    MIN_LEN_CURRENCY,
     MIN_LEN_NAME,
     MIN_VALUE_CITY,
     MIN_VALUE_COUNTRY,
     PATTERN_NAME,
 )
 from .validators.phone_number import normalize_phone_number
+
+Activity = Annotated[
+    str, Field(min_length=MIN_LEN_ACTIVITY, max_length=MAX_LEN_ACTIVITY)
+]
 
 
 class ProfileBase(BaseModel):
@@ -42,7 +48,7 @@ class ProfileBase(BaseModel):
         max_length=MAX_LEN_ABOUT_ME,
         description="Произвольная информация о себе.",
     )
-    activities: list[str] = Field(
+    activities: list[Activity] = Field(
         default_factory=list,
         max_length=MAX_LEN_ACTIVITIES,
         description="External activity identifiers from activities service",
@@ -52,9 +58,9 @@ class ProfileBase(BaseModel):
     citizenship: str | None = Field(
         default=None, min_length=MIN_LEN_CITIZENSHIP, max_length=MAX_LEN_CITIZENSHIP
     )
-    currency: str | None = Field(
-        default=None, min_length=MIN_LEN_CURRENCY, max_length=MAX_LEN_CURRENCY
-    )
+    gender: Gender = Field(default=Gender.PREFER_NOT_TO_SAY)
+    skill: SkillLevel | None = None
+
     # Времено отключено по просьбе тестеров. До подключения бакета
     # avatar_url: Optional[str] = None
 
@@ -64,15 +70,6 @@ class ProfileBase(BaseModel):
         if phone_number is not None:
             return normalize_phone_number(phone_number)
         return None
-
-    @field_validator("currency")
-    @classmethod
-    def validate_currency(cls, value: str | None) -> str | None:
-        if value is not None:
-            value = value.upper()
-            if not pycountry.currencies.get(alpha_3=value):
-                raise ValueError("Invalid currency code")
-        return value
 
     @field_validator("birth_date")
     @classmethod
