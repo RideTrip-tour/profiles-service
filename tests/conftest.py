@@ -38,6 +38,7 @@ INVALID_PROFILE_FIELDS = [
     ("currency", "RU"),
     ("currency", "RUBB"),
     ("birth_date", "2002.09.09"),
+    ("birth_date", ""),
 ]
 
 
