@@ -35,8 +35,6 @@ INVALID_PROFILE_FIELDS = [
     ("city", "A" * 26),
     ("citizenship", "A"),
     ("citizenship", "A" * 16),
-    ("currency", "RU"),
-    ("currency", "RUBB"),
     ("birth_date", "2002.09.09"),
     ("birth_date", ""),
 ]

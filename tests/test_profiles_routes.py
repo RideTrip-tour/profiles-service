@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 from fastapi import status
 
+from app.utils.enums import Gender
 from tests.conftest import INVALID_PROFILE_FIELDS
 
 
@@ -18,7 +19,8 @@ def expected_payload(**overrides):
         "country_id": None,
         "city_id": None,
         "citizenship": None,
-        "currency": None,
+        "gender": Gender.PREFER_NOT_TO_SAY,
+        "skill": None,
     }
     payload.update(overrides)
     return payload
@@ -40,7 +42,8 @@ class StubProfileManager:
             "country_id": None,
             "city_id": None,
             "citizenship": None,
-            "currency": None,
+            "gender": Gender.PREFER_NOT_TO_SAY,
+            "skill": None,
             "created_at": datetime(2024, 1, 1, tzinfo=UTC),
             "updated_at": datetime(2024, 1, 1, tzinfo=UTC),
         }
