@@ -89,8 +89,6 @@ pluggy==1.6.0
     #   pytest-cov
 psycopg2-binary==2.9.11
     # via -r requirements.txt
-pycountry==26.2.16
-    # via -r requirements.txt
 pydantic==2.12.5
     # via
     #   -r requirements.txt

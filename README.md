@@ -81,7 +81,7 @@ venv/bin/uvicorn main:app --reload
 
 Все защищенные ручки ожидают, что в `request.state.user` уже будет положен пользователь gateway-мидлварью или внешней auth-логикой.
 
-### `POST /api/profile/`
+### `POST /api/profile/create/`
 
 Создает профиль для текущего пользователя.
 
@@ -98,7 +98,8 @@ venv/bin/uvicorn main:app --reload
   "country": "Russia",
   "city": "Moscow",
   "citizenship": "RU",
-  "currency": "RUB",
+  "gender": "Мужской",
+  "skill": "Новичок",
   "avatar_url": "https://example.com/avatar.jpg"
 }
 ```
@@ -177,7 +178,8 @@ venv/bin/uvicorn main:app --reload
   "country": "Russia",
   "city": "Moscow",
   "citizenship": "RU",
-  "currency": "RUB",
+  "gender": "Мужской",
+  "skill": "Новичок",
   "avatar_url": "https://example.com/avatar.jpg",
   "created_at": "2026-04-12T12:00:00Z",
   "updated_at": "2026-04-12T12:00:00Z"

@@ -6,6 +6,7 @@ from sqlalchemy import (
     CheckConstraint,
     Date,
     DateTime,
+    Enum,
     ForeignKey,
     Integer,
     String,
@@ -17,6 +18,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.utils.enums import Gender, SkillLevel
 
 PROFILE_RELATIONSHIP_CASCADE = "all, delete-orphan"
 
@@ -60,11 +62,27 @@ class Profile(Base):
     country_id: Mapped[int | None] = mapped_column(Integer)
     city_id: Mapped[int | None] = mapped_column(Integer)
     citizenship: Mapped[str | None] = mapped_column(String(100))
-    currency: Mapped[str | None] = mapped_column(String(10))
     role: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
         server_default=text("'user'"),
+    )
+    gender: Mapped[Gender] = mapped_column(
+        Enum(
+            Gender,
+            native_enum=False,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
+        default=Gender.PREFER_NOT_TO_SAY,
+    )
+    skill: Mapped[SkillLevel | None] = mapped_column(
+        Enum(
+            SkillLevel,
+            native_enum=False,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
+        nullable=True,
+        default=None,
     )
     avatar_url: Mapped[str | None] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())

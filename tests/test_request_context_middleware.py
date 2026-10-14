@@ -22,7 +22,6 @@ class StubProfileManager:
             "country_id": None,
             "city_id": None,
             "citizenship": None,
-            "currency": None,
             "created_at": datetime(2024, 1, 1, tzinfo=UTC),
             "updated_at": datetime(2024, 1, 1, tzinfo=UTC),
         }
