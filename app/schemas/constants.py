@@ -1,6 +1,7 @@
 MIN_LEN_NAME = 2
 MAX_LEN_NAME = 15
 PATTERN_NAME = r"^[A-Za-zА-Яа-яЁё]+(?:[ -][A-Za-zА-Яа-яЁё]+)?$"
+MIN_LEN_ABOUT_ME = 1
 MAX_LEN_ABOUT_ME = 200
 MAX_LEN_ACTIVITIES = 25
 MAX_LEN_ACTIVITY = 5

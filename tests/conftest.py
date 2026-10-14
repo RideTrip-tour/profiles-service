@@ -28,6 +28,7 @@ from main import create_app
 
 INVALID_PROFILE_FIELDS = [
     ("about_me", "A" * 201),
+    ("about_me", ""),
     ("activities", ["A"] * 26),
     ("country", "A"),
     ("country", "A" * 26),
