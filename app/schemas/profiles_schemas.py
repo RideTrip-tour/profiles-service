@@ -10,6 +10,7 @@ from .constants import (
     MAX_LEN_CITIZENSHIP,
     MAX_LEN_CURRENCY,
     MAX_LEN_NAME,
+    MIN_LEN_ABOUT_ME,
     MIN_LEN_CITIZENSHIP,
     MIN_LEN_CURRENCY,
     MIN_LEN_NAME,
@@ -39,6 +40,7 @@ class ProfileBase(BaseModel):
     birth_date: date | None = Field(default=None, description="")
     about_me: str | None = Field(
         default=None,
+        min_length=MIN_LEN_ABOUT_ME,
         max_length=MAX_LEN_ABOUT_ME,
         description="Произвольная информация о себе.",
     )
