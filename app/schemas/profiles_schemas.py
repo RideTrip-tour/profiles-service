@@ -1,21 +1,19 @@
 from datetime import UTC, date, datetime
-from typing import Annotated
 
 from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.validators.activeties import Activity, validate_activities
 from app.utils.enums import Gender, SkillLevel
 
 from .constants import (
     MAX_AGE,
     MAX_LEN_ABOUT_ME,
     MAX_LEN_ACTIVITIES,
-    MAX_LEN_ACTIVITY,
     MAX_LEN_CITIZENSHIP,
     MAX_LEN_NAME,
     MIN_AGE,
     MIN_LEN_ABOUT_ME,
-    MIN_LEN_ACTIVITY,
     MIN_LEN_CITIZENSHIP,
     MIN_LEN_NAME,
     MIN_VALUE_CITY,
@@ -23,10 +21,6 @@ from .constants import (
     PATTERN_NAME,
 )
 from .validators.phone_number import normalize_phone_number
-
-Activity = Annotated[
-    str, Field(min_length=MIN_LEN_ACTIVITY, max_length=MAX_LEN_ACTIVITY)
-]
 
 
 class ProfileBase(BaseModel):
@@ -67,6 +61,11 @@ class ProfileBase(BaseModel):
 
     # Времено отключено по просьбе тестеров. До подключения бакета
     # avatar_url: Optional[str] = None
+
+    @field_validator("activities")
+    @classmethod
+    def validate_activities(cls, activities: list[Activity]) -> list[Activity]:
+        return validate_activities(activities)
 
     @field_validator("phone_number")
     @classmethod
