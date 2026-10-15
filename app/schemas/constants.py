@@ -11,3 +11,5 @@ MIN_VALUE_COUNTRY = 0
 PATTERN_CITY = r"^[A-Za-zА-Яа-яЁё]+(?:[ -][A-Za-zА-Яа-яЁё]+)*$"
 MIN_LEN_CITIZENSHIP = 2
 MAX_LEN_CITIZENSHIP = 15
+MIN_AGE = 18
+MAX_AGE = 120

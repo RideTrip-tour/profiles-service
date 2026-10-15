@@ -267,16 +267,18 @@ def test_profile_fields_have_default_values(profile_schema, field, expected):
     assert getattr(profile, field) == expected
 
 
-def test_birth_date_rejects_under_18(profile_schema, today):
+@pytest.mark.parametrize("age", [17, 121])
+def test_birth_date_rejects_invalid_age(profile_schema, today, age):
     schema, data = profile_schema
-    birth_date = today - relativedelta(years=18) + relativedelta(days=1)
+    birth_date = today - relativedelta(years=age)
     with pytest.raises(ValidationError):
         schema(**{**data, "birth_date": birth_date})
 
 
-def test_birth_date_accepts_adult(profile_schema, today):
+@pytest.mark.parametrize("age", [18, 120])
+def test_birth_date_accepts_adult(profile_schema, today, age):
     schema, data = profile_schema
-    birth_date = today - relativedelta(years=18)
+    birth_date = today - relativedelta(years=age)
     profile = schema(**{**data, "birth_date": birth_date})
     assert profile.birth_date == birth_date
 

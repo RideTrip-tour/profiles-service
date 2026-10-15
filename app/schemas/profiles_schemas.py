@@ -7,11 +7,13 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.utils.enums import Gender, SkillLevel
 
 from .constants import (
+    MAX_AGE,
     MAX_LEN_ABOUT_ME,
     MAX_LEN_ACTIVITIES,
     MAX_LEN_ACTIVITY,
     MAX_LEN_CITIZENSHIP,
     MAX_LEN_NAME,
+    MIN_AGE,
     MIN_LEN_ABOUT_ME,
     MIN_LEN_ACTIVITY,
     MIN_LEN_CITIZENSHIP,
@@ -78,8 +80,10 @@ class ProfileBase(BaseModel):
     def validate_birth_date(cls, value: date | None) -> date | None:
         if value is not None:
             age = relativedelta(datetime.now(UTC).date(), value).years
-            if age < 18:
+            if age < MIN_AGE:
                 raise ValueError("User must be at least 18 years old")
+            elif age > MAX_AGE:
+                raise ValueError("The user cannot be older than 120 years")
         return value
 
 

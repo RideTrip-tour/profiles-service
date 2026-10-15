@@ -37,6 +37,7 @@ INVALID_PROFILE_FIELDS = [
     ("citizenship", "A"),
     ("citizenship", "A" * 16),
     ("birth_date", "2002.09.09"),
+    ("birth_date", ""),
 ]
 
 
