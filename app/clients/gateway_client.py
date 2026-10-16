@@ -37,7 +37,9 @@ class GatewayClient:
             params={"id": reference_id},
         )
 
-        if not response.json()["items"]:
+        items = response.json()["items"]
+
+        if not any(item["id"] == reference_id for item in items):
             logger.warning(
                 "Gateway reference not found: path=%s, reference_id=%s",
                 path,
