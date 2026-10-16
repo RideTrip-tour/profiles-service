@@ -234,6 +234,8 @@ def test_profile_fields_length_validation(profile_schema, field, value):
         ("activities", ["A"]),
         ("country_id", 1),
         ("city_id", 1),
+        ("country_id", 2**31 - 1),
+        ("city_id", 2**31 - 1),
         ("citizenship", "AB"),
         ("citizenship", "A" * 15),
     ],
