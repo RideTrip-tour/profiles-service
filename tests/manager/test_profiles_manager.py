@@ -131,6 +131,136 @@ async def test_admin_create_profile_calls_crud_when_profile_is_missing(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("is_admin", "create_method_path"),
+    [
+        (False, "app.services.profiles_manager.crud_create_profile"),
+        (True, "app.services.profiles_manager.crud_admin_create_profile"),
+    ],
+)
+async def test_create_profile_validates_country_and_city(
+    monkeypatch,
+    profile_manager,
+    is_admin,
+    create_method_path,
+):
+    created_profile = SimpleNamespace(
+        id=2,
+        user_id=7,
+        settings=SimpleNamespace(show_profile=True),
+    )
+    checked = []
+
+    async def fake_get_profile_by_user_id(db, user_id):
+        return None
+
+    async def fake_check_country_exists(country_id):
+        checked.append(("country", country_id))
+
+    async def fake_check_city_exists(city_id):
+        checked.append(("city", city_id))
+
+    async def fake_create_profile(*args):
+        return created_profile
+
+    monkeypatch.setattr(
+        "app.services.profiles_manager.crud_get_profile_by_user_id",
+        fake_get_profile_by_user_id,
+    )
+    monkeypatch.setattr(
+        profile_manager.gateway_client,
+        "check_country_exists",
+        fake_check_country_exists,
+    )
+    monkeypatch.setattr(
+        profile_manager.gateway_client,
+        "check_city_exists",
+        fake_check_city_exists,
+    )
+    monkeypatch.setattr(create_method_path, fake_create_profile)
+
+    if is_admin:
+        profile_in = AdminProfileCreate(
+            user_id=7,
+            country_id=10,
+            city_id=20,
+        )
+        result = await profile_manager.admin_create_profile(profile_in)
+    else:
+        profile_in = ProfileCreate(country_id=10, city_id=20)
+        result = await profile_manager.create_profile(7, profile_in)
+
+    assert result is created_profile
+    assert checked == [("country", 10), ("city", 20)]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("is_admin", [False, True])
+@pytest.mark.parametrize("invalid_location", ["country", "city"])
+async def test_create_profile_raises_not_found_for_missing_location(
+    monkeypatch,
+    profile_manager,
+    is_admin,
+    invalid_location,
+):
+    async def fake_get_profile_by_user_id(db, user_id):
+        return None
+
+    async def fake_check_country_exists(country_id):
+        if invalid_location == "country":
+            raise ValueError("Country not found")
+
+    async def fake_check_city_exists(city_id):
+        if invalid_location == "city":
+            raise ValueError("City not found")
+
+    async def fake_create_profile(*args):
+        pytest.fail("CRUD создания не должен вызываться")
+
+    monkeypatch.setattr(
+        "app.services.profiles_manager.crud_get_profile_by_user_id",
+        fake_get_profile_by_user_id,
+    )
+    monkeypatch.setattr(
+        profile_manager.gateway_client,
+        "check_country_exists",
+        fake_check_country_exists,
+    )
+    monkeypatch.setattr(
+        profile_manager.gateway_client,
+        "check_city_exists",
+        fake_check_city_exists,
+    )
+
+    if is_admin:
+        monkeypatch.setattr(
+            "app.services.profiles_manager.crud_admin_create_profile",
+            fake_create_profile,
+        )
+        profile_in = AdminProfileCreate(
+            user_id=7,
+            country_id=10,
+            city_id=20,
+        )
+        create = profile_manager.admin_create_profile(profile_in)
+    else:
+        monkeypatch.setattr(
+            "app.services.profiles_manager.crud_create_profile",
+            fake_create_profile,
+        )
+        profile_in = ProfileCreate(country_id=10, city_id=20)
+        create = profile_manager.create_profile(7, profile_in)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await create
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == (
+        "Country not found" if invalid_location == "country" else "City not found"
+    )
+
+
+@pytest.mark.asyncio
 async def test_get_profile_by_user_id_raises_not_found(monkeypatch, profile_manager):
     async def fake_get_profile_by_user_id(db, user_id):
         return None
