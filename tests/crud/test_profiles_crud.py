@@ -19,7 +19,12 @@ from app.db.models import Profile
 
 @pytest.fixture
 def profile():
-    return MagicMock(spec=Profile)
+    return Profile(
+        id=10,
+        user_id=7,
+        is_active=True,
+        deleted_at=None,
+    )
 
 
 @pytest.mark.asyncio
@@ -203,13 +208,18 @@ async def test_get_profile_id_by_user_id_returns_none(db, result_mock):
 async def test_delete_profile_by_identifier(
     db, profile, function, identifier, result_mock
 ):
+    profile.deleted_at = None
+    profile.is_active = True
+
     result_mock.scalar_one_or_none.return_value = profile
     db.execute.return_value = result_mock
 
     result = await function(db, identifier)
 
     assert result is True
-    db.delete.assert_awaited_once_with(profile)
+    assert profile.deleted_at is not None
+    assert profile.is_active is False
+    db.delete.assert_not_awaited()
     db.commit.assert_awaited_once()
 
 
