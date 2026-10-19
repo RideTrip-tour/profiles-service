@@ -50,6 +50,7 @@ from app.crud.profiles_crud import (
 from app.db.models import FavoriteLocation, ProfileSettings
 from app.schemas.admin_schemas import ProfileCreate as AdminProfileCreate
 from app.schemas.profiles_schemas import (
+    ProfileBase,
     ProfileCreate,
     ProfileSettingsUpdate,
     ProfileUpdate,
@@ -77,6 +78,7 @@ class ProfileManager:
     async def create_profile(self, user_id: int, profile_in: ProfileCreate):
         existing_profile = await crud_get_profile_by_user_id(self.db, user_id)
         self._raise_conflict_if_exists(existing_profile)
+        await self._validate_city_country(profile_in)
         profile = await crud_create_profile(self.db, user_id, profile_in)
         logger.info(
             "Profile created: user_id=%s profile_id=%s",
@@ -94,6 +96,7 @@ class ProfileManager:
             self.db, profile_in.user_id
         )
         self._raise_conflict_if_exists(existing_profile)
+        await self._validate_city_country(profile_in)
         profile = await crud_admin_create_profile(self.db, profile_in)
         logger.info(
             "Profile created by admin: user_id=%s profile_id=%s",
@@ -112,7 +115,7 @@ class ProfileManager:
         self._raise_not_found(profile)
         return profile
 
-    async def _validate_city_country(self, payload: ProfileUpdate) -> None:
+    async def _validate_city_country(self, payload: ProfileBase) -> None:
         try:
             if payload.country_id is not None:
                 await self.gateway_client.check_country_exists(payload.country_id)
