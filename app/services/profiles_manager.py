@@ -178,12 +178,14 @@ class ProfileManager:
     async def delete_profile_by_user_id(self, user_id: int) -> None:
         deleted = await crud_delete_profile_by_user_id(self.db, user_id)
         self._raise_not_found(deleted)
+        await self.gateway_client.delete_current_user()
         logger.info("Profile deleted: user_id=%s", user_id)
 
     async def delete_profile_by_id(self, profile_id: int) -> None:
         deleted = await crud_delete_profile_by_id(self.db, profile_id)
-        logger.info("Profile deleted: profile_id=%s", profile_id)
         self._raise_not_found(deleted)
+        await self.gateway_client.delete_current_user()
+        logger.info("Profile deleted: profile_id=%s", profile_id)
 
     async def add_favorite_location(self, user_id: int, location_id: int):
 

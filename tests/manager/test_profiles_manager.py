@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import httpx
 import pytest
@@ -437,11 +438,14 @@ async def test_delete_profile_by_user_id_raises_not_found_when_nothing_deleted(
         fake_delete_profile_by_user_id,
     )
 
+    profile_manager.gateway_client.delete_current_user = AsyncMock()
+
     with pytest.raises(HTTPException) as exc_info:
         await profile_manager.delete_profile_by_user_id(7)
 
     assert exc_info.value.status_code == 404
     assert exc_info.value.detail == "Profile not found"
+    profile_manager.gateway_client.delete_current_user.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -457,9 +461,12 @@ async def test_delete_profile_by_user_id_returns_none_on_success(
         fake_delete_profile_by_user_id,
     )
 
+    profile_manager.gateway_client.delete_current_user = AsyncMock()
+
     result = await profile_manager.delete_profile_by_user_id(7)
 
     assert result is None
+    profile_manager.gateway_client.delete_current_user.assert_awaited_once_with()
 
 
 @pytest.mark.asyncio

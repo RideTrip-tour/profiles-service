@@ -107,6 +107,12 @@ class GatewayClient:
             algorithm="HS256",
         )
 
+    async def delete_current_user(self) -> None:
+        await self._request(
+            method="DELETE",
+            path="/api/auth/me",
+        )
+
     async def _request(
         self,
         method: str,

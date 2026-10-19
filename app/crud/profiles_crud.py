@@ -14,9 +14,12 @@ async def _delete_profile(db: AsyncSession, profile: Profile | None) -> bool:
     if profile is None:
         return False
 
-    await db.delete(profile)
-    await db.commit()
+    if profile.deleted_at is not None:
+        return True
 
+    profile.soft_delete()
+
+    await db.commit()
     return True
 
 
@@ -52,7 +55,7 @@ async def _find_by_id(db: AsyncSession, profile_id: int) -> Profile | None:
         await db.execute(
             select(Profile)
             .options(joinedload(Profile.settings), selectinload(Profile.favorites))
-            .where(Profile.id == profile_id)
+            .where(Profile.id == profile_id, Profile.is_active.is_(True))
         )
     ).scalar_one_or_none()
 
@@ -62,7 +65,7 @@ async def _find_by_user_id(db: AsyncSession, user_id: int) -> Profile | None:
         await db.execute(
             select(Profile)
             .options(joinedload(Profile.settings), selectinload(Profile.favorites))
-            .where(Profile.user_id == user_id)
+            .where(Profile.user_id == user_id, Profile.is_active.is_(True))
         )
     ).scalar_one_or_none()
 
@@ -101,7 +104,7 @@ async def get_profile_by_id(db: AsyncSession, profile_id: int) -> Profile | None
 
 async def delete_profile_by_user_id(db: AsyncSession, user_id: int) -> bool:
     """
-    Удаляет профиль по user_id.
+    Мягкое удаление профиля по user_id.
     Возвращает True если удален, иначе False.
     """
     profile = await _find_by_user_id(db, user_id)
@@ -111,7 +114,7 @@ async def delete_profile_by_user_id(db: AsyncSession, user_id: int) -> bool:
 
 async def delete_profile_by_id(db: AsyncSession, profile_id: int) -> bool:
     """
-    Удаляет профиль по id.
+    Мягкое удаление профиля по id.
     Возвращает True если удален, иначе False.
     """
     profile = await _find_by_id(db, profile_id)
