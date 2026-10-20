@@ -8,25 +8,19 @@ from app.schemas.constants import (
     MAX_AGE,
     MAX_LEN_ABOUT_ME,
     MAX_LEN_ACTIVITIES,
-    MAX_LEN_ACTIVITY,
     MAX_LEN_CITIZENSHIP,
     MAX_LEN_NAME,
     MAX_VALUE_INTEGER,
     MIN_AGE,
     MIN_LEN_ABOUT_ME,
-    MIN_LEN_ACTIVITY,
     MIN_LEN_CITIZENSHIP,
     MIN_LEN_NAME,
     MIN_VALUE_INTEGER,
     PATTERN_NAME,
 )
+from app.schemas.validators.activeties import Activity, validate_activities
+from app.schemas.validators.phone_number import normalize_phone_number
 from app.utils.enums import Gender, SkillLevel
-
-from .validators.phone_number import normalize_phone_number
-
-Activity = Annotated[
-    str, Field(min_length=MIN_LEN_ACTIVITY, max_length=MAX_LEN_ACTIVITY)
-]
 
 PositiveInt32 = Annotated[int, Field(ge=MIN_VALUE_INTEGER, le=MAX_VALUE_INTEGER)]
 
@@ -69,6 +63,11 @@ class ProfileBase(BaseModel):
 
     # Времено отключено по просьбе тестеров. До подключения бакета
     # avatar_url: Optional[str] = None
+
+    @field_validator("activities")
+    @classmethod
+    def validate_activities(cls, activities: list[Activity]) -> list[Activity]:
+        return validate_activities(activities)
 
     @field_validator("phone_number")
     @classmethod
