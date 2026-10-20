@@ -22,7 +22,6 @@ from app.schemas.validators.activeties import Activity, validate_activities
 from app.schemas.validators.phone_number import normalize_phone_number
 from app.utils.enums import Gender, SkillLevel
 
-
 PositiveInt32 = Annotated[int, Field(ge=MIN_VALUE_INTEGER, le=MAX_VALUE_INTEGER)]
 
 
