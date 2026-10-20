@@ -1,13 +1,10 @@
 from datetime import UTC, date, datetime
+from typing import Annotated
 
 from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-
-from app.schemas.validators.activeties import Activity, validate_activities
-from app.utils.enums import Gender, SkillLevel
 from app.schemas.constants import (
-
     MAX_AGE,
     MAX_LEN_ABOUT_ME,
     MAX_LEN_ACTIVITIES,
@@ -21,14 +18,10 @@ from app.schemas.constants import (
     MIN_VALUE_INTEGER,
     PATTERN_NAME,
 )
+from app.schemas.validators.activeties import Activity, validate_activities
+from app.schemas.validators.phone_number import normalize_phone_number
 from app.utils.enums import Gender, SkillLevel
 
-from .validators.phone_number import normalize_phone_number
-
-
-Activity = Annotated[
-    str, Field(min_length=MIN_LEN_ACTIVITY, max_length=MAX_LEN_ACTIVITY)
-]
 
 PositiveInt32 = Annotated[int, Field(ge=MIN_VALUE_INTEGER, le=MAX_VALUE_INTEGER)]
 
