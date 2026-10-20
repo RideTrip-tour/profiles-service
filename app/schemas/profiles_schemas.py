@@ -3,24 +3,34 @@ from datetime import UTC, date, datetime
 from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+
 from app.schemas.validators.activeties import Activity, validate_activities
 from app.utils.enums import Gender, SkillLevel
+from app.schemas.constants import (
 
-from .constants import (
     MAX_AGE,
     MAX_LEN_ABOUT_ME,
     MAX_LEN_ACTIVITIES,
     MAX_LEN_CITIZENSHIP,
     MAX_LEN_NAME,
+    MAX_VALUE_INTEGER,
     MIN_AGE,
     MIN_LEN_ABOUT_ME,
     MIN_LEN_CITIZENSHIP,
     MIN_LEN_NAME,
-    MIN_VALUE_CITY,
-    MIN_VALUE_COUNTRY,
+    MIN_VALUE_INTEGER,
     PATTERN_NAME,
 )
+from app.utils.enums import Gender, SkillLevel
+
 from .validators.phone_number import normalize_phone_number
+
+
+Activity = Annotated[
+    str, Field(min_length=MIN_LEN_ACTIVITY, max_length=MAX_LEN_ACTIVITY)
+]
+
+PositiveInt32 = Annotated[int, Field(ge=MIN_VALUE_INTEGER, le=MAX_VALUE_INTEGER)]
 
 
 class ProfileBase(BaseModel):
@@ -51,8 +61,8 @@ class ProfileBase(BaseModel):
         max_length=MAX_LEN_ACTIVITIES,
         description="External activity identifiers from activities service",
     )
-    country_id: int | None = Field(default=None, gt=MIN_VALUE_COUNTRY)
-    city_id: int | None = Field(default=None, gt=MIN_VALUE_CITY)
+    country_id: PositiveInt32 | None = None
+    city_id: PositiveInt32 | None = None
     citizenship: str | None = Field(
         default=None, min_length=MIN_LEN_CITIZENSHIP, max_length=MAX_LEN_CITIZENSHIP
     )

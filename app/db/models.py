@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 from sqlalchemy import (
     JSON,
@@ -89,6 +89,11 @@ class Profile(Base):
     updated_at: Mapped[datetime] = mapped_column(
         server_default=func.now(), onupdate=func.now()
     )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
     favorites: Mapped[list["FavoriteLocation"]] = relationship(
         back_populates="profile", cascade=PROFILE_RELATIONSHIP_CASCADE
     )
@@ -99,6 +104,19 @@ class Profile(Base):
     settings: Mapped["ProfileSettings"] = relationship(
         back_populates="profile", cascade=PROFILE_RELATIONSHIP_CASCADE, uselist=False
     )
+
+    is_active: Mapped[bool] = bool_setting()
+
+    def soft_delete(self) -> None:
+        now = datetime.now(UTC)
+        self.deleted_at = now
+        self.updated_at = now
+        self.is_active = False
+
+    def restore(self) -> None:
+        self.deleted_at = None
+        self.updated_at = datetime.now(UTC)
+        self.is_active = True
 
     def __repr__(self):
         return f"<Profile {self.first_name}: {self.last_name}>"
