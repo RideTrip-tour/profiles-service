@@ -3,11 +3,12 @@ from contextlib import asynccontextmanager
 
 import redis.asyncio as redis
 from fastapi import FastAPI
+from internal_middleware import build_user_context_middleware
 
 from app.clients.gateway_client import GatewayClient
 from app.middlerware.request_context import (
     profile_context_middleware,
-    user_context_middleware,
+    # user_context_middleware,
 )
 from app.routes.admin_routes import router as admin_router
 from app.routes.profiles_routes import router as user_router
@@ -40,7 +41,7 @@ def create_app() -> FastAPI:
     )
 
     app.middleware("http")(profile_context_middleware)
-    app.middleware("http")(user_context_middleware)
+    app.middleware("http")(build_user_context_middleware(logger=logger))
 
     @app.get(f"/api/{settings.app_name.split('-')[0]}/health")
     async def health_check():

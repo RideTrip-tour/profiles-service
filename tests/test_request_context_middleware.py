@@ -62,7 +62,7 @@ async def test_x_user_claims_header_is_restored_into_request_state(
 
     claims = encode_claims(
         {
-            "id": "7",
+            "id": 7,
             "is_active": True,
             "is_superuser": False,
         }
@@ -92,7 +92,7 @@ async def test_x_user_claims_without_user_id_returns_401(client):
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert response.json() == {"detail": "User not identified"}
+    assert response.json() == {"detail": "Unauthorized"}
 
 
 @pytest.mark.asyncio
@@ -108,7 +108,7 @@ async def test_profile_not_found_returns_401(client, monkeypatch, gateway_client
 
     claims = encode_claims(
         {
-            "id": "7",
+            "id": 7,
             "is_active": True,
             "is_superuser": False,
         }
