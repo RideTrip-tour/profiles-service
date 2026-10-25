@@ -2,7 +2,7 @@ import logging
 
 from initial_client import InitialClient
 
-from app.middlerware.context import user_claims
+from app.middlerware.context import request_id_var, user_claims
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,7 @@ class GatewayClient(InitialClient):
             path=path,
             user_context=self._get_user_context(),
             params={"id": reference_id},
+            request_id=request_id_var.get(),
         )
 
         items = response.json()["items"]
@@ -71,6 +72,7 @@ class GatewayClient(InitialClient):
             method="GET",
             user_context=self._get_user_context(),
             path=f"/api/locations/{location_id}",
+            request_id=request_id_var.get(),
         )
 
     async def delete_current_user(self) -> None:
@@ -78,4 +80,5 @@ class GatewayClient(InitialClient):
             method="DELETE",
             user_context=self._get_user_context(),
             path="/api/auth/me",
+            request_id=request_id_var.get(),
         )
