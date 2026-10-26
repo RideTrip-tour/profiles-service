@@ -4,7 +4,6 @@ from initial_client import InitialClient
 from internal_middleware.context import user_claims
 
 from app.middlerware.context import request_id_var
-
 from config import settings
 
 logger = logging.getLogger(__name__)
