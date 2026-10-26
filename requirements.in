@@ -2,7 +2,7 @@ alembic==1.18.4
 asyncpg==0.31.0
 fastapi==0.135.2
 httpx==0.28.1
-internal-middleware @ git+https://git@github.com/RideTrip-tour/middlewares.git@main
+internal-middleware @ git+https://github.com/RideTrip-tour/middlewares.git@main
 phonenumbers==9.0.37
 psycopg2-binary==2.9.11
 pydantic==2.12.5
