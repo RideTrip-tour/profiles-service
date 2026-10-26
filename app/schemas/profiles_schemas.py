@@ -16,10 +16,11 @@ from app.schemas.constants import (
     MIN_LEN_CITIZENSHIP,
     MIN_LEN_NAME,
     MIN_VALUE_INTEGER,
+    PATTERN_CITIZENSHIP,
     PATTERN_NAME,
 )
 from app.schemas.validators.activeties import Activity, validate_activities
-from app.schemas.validators.phone_number import normalize_phone_number
+from app.schemas.validators.phone_number import validate_phone_number
 from app.utils.enums import Gender, SkillLevel
 
 PositiveInt32 = Annotated[int, Field(ge=MIN_VALUE_INTEGER, le=MAX_VALUE_INTEGER)]
@@ -56,7 +57,10 @@ class ProfileBase(BaseModel):
     country_id: PositiveInt32 | None = None
     city_id: PositiveInt32 | None = None
     citizenship: str | None = Field(
-        default=None, min_length=MIN_LEN_CITIZENSHIP, max_length=MAX_LEN_CITIZENSHIP
+        default=None,
+        min_length=MIN_LEN_CITIZENSHIP,
+        max_length=MAX_LEN_CITIZENSHIP,
+        pattern=PATTERN_CITIZENSHIP,
     )
     gender: Gender = Field(default=Gender.PREFER_NOT_TO_SAY)
     skill: SkillLevel | None = None
@@ -73,7 +77,7 @@ class ProfileBase(BaseModel):
     @classmethod
     def validate_phone_number(cls, phone_number: str | None) -> str | None:
         if phone_number is not None:
-            return normalize_phone_number(phone_number)
+            return validate_phone_number(phone_number)
         return None
 
     @field_validator("birth_date")
