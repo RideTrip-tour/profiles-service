@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from internal_middleware import user_claims
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -20,7 +21,8 @@ os.environ["DEBUG"] = "false"
 from app.clients.gateway_client import GatewayClient
 from app.db.models import ProfileDevice
 from app.dependencies.profiles import get_profile_manager
-from app.middlerware.context import user_claims
+
+# from app.middlerware.context import user_claims
 from app.services.cache_manager import CacheManager
 from app.services.devices_manager import DeviceManager
 from app.services.profiles_manager import ProfileManager
