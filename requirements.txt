@@ -47,7 +47,7 @@ idna==3.20
     # via
     #   anyio
     #   httpx
-initial-client @ git+https://github.com/RideTrip-tour/internal_client.git@main
+initial-client @ git+https://github.com/RideTrip-tour/internal_client.git@126ac55a179faddb9daffa6d42adc5f74b16523c
     # via -r requirements.in
 internal-middleware @ git+https://github.com/RideTrip-tour/middlewares.git@main
     # via -r requirements.in

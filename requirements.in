@@ -10,6 +10,6 @@ pydantic-settings==2.13.1
 PyJWT==2.15.1
 python-dateutil==2.9.0.post0
 redis==6.1.0
-initial-client @ git+https://github.com/RideTrip-tour/internal_client.git@main
+initial-client @ git+https://github.com/RideTrip-tour/internal_client.git@126ac55a179faddb9daffa6d42adc5f74b16523c
 sqlalchemy==2.0.49
 uvicorn[standard]==0.43.0
