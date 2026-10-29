@@ -20,7 +20,7 @@ def _get_current_id_form_state(request: Request, key: str) -> int:
             detail="Unauthorized",
         )
 
-    current_id = user.get(key)
+    current_id = user.get(key) or getattr(request.state, key, None)
     if current_id in (None, ""):
         logger.warning("Missing required field '%s' in request.state.user", key)
         raise HTTPException(
@@ -31,7 +31,7 @@ def _get_current_id_form_state(request: Request, key: str) -> int:
 
 
 def get_current_user_id(request: Request) -> int:
-    return _get_current_id_form_state(request, "id")
+    return _get_current_id_form_state(request, "user_id")
 
 
 def get_current_profile_id(request: Request) -> int:

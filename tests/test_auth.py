@@ -13,8 +13,8 @@ def make_request(user):
 @pytest.mark.parametrize(
     ("user", "expected_user_id"),
     [
-        ({"id": 42}, 42),
-        ({"id": "42"}, 42),
+        ({"user_id": 42}, 42),
+        ({"user_id": "42"}, 42),
     ],
 )
 def test_get_current_user_id_returns_integer_sub(user, expected_user_id):
