@@ -7,7 +7,7 @@ async def test_check_city_exists_does_not_raise_for_existing_city(
     gateway_client, monkeypatch, user_context
 ):
 
-    async def fake_request(method, path, params, headers):
+    async def fake_request(method, path, params, headers, json=None):
         request = httpx.Request(
             method,
             f"http://test{path}",
@@ -27,7 +27,7 @@ async def test_check_city_exists_does_not_raise_for_existing_city(
 async def test_check_city_exists_raises_value_error_for_missing_city(
     gateway_client, monkeypatch, user_context
 ):
-    async def fake_request(method, path, params, headers):
+    async def fake_request(method, path, params, headers, json=None):
         request = httpx.Request(
             method,
             f"http://test{path}",
@@ -51,7 +51,7 @@ async def test_check_city_exists_raises_value_error_for_missing_city(
 async def test_check_location_exists_raises_http_error_for_missing_location(
     gateway_client, monkeypatch, user_context
 ):
-    async def fake_request(method, path, params, headers):
+    async def fake_request(method, path, params, headers, json=None):
         request = httpx.Request(
             method,
             f"http://test{path}",
@@ -72,7 +72,7 @@ async def test_check_location_exists_raises_http_error_for_missing_location(
 async def test_delete_current_user_does_not_raise(
     gateway_client, monkeypatch, user_context
 ):
-    async def fake_request(method, path, params, headers):
+    async def fake_request(method, path, params, headers, json=None):
         request = httpx.Request(
             method,
             f"http://test{path}",
