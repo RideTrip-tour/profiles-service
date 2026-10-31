@@ -2,7 +2,7 @@ from datetime import UTC, date, datetime
 from typing import Annotated
 
 from dateutil.relativedelta import relativedelta
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator
 
 from app.schemas.constants import (
     MAX_AGE,
@@ -23,7 +23,7 @@ from app.schemas.validators.activeties import Activity, validate_activities
 from app.schemas.validators.phone_number import validate_phone_number
 from app.utils.enums import Gender, SkillLevel
 
-PositiveInt32 = Annotated[int, Field(ge=MIN_VALUE_INTEGER, le=MAX_VALUE_INTEGER)]
+PositiveInt32 = Annotated[StrictInt, Field(ge=MIN_VALUE_INTEGER, le=MAX_VALUE_INTEGER)]
 
 
 class ProfileBase(BaseModel):
