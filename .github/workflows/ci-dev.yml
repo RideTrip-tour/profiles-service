@@ -330,3 +330,98 @@ jobs:
             --data-urlencode "text=${MESSAGE}"; then
               echo "Failed to send Telegram notification"
           fi
+
+
+
+name: CI Dev
+
+on:
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  ruff:
+    uses: RideTrip-tour/ci-templates/.github/workflows/python-ruff.yml@1ea20e0f3eef0c509201b91ee307a5be4d0ea489
+  
+  mypy:
+    uses: RideTrip-tour/ci-templates/.github/workflows/python-mypy.yml@1ea20e0f3eef0c509201b91ee307a5be4d0ea489
+    with:
+      mypy-target: app
+
+  tests:
+    uses: RideTrip-tour/ci-templates/.github/workflows/python-test.yml@1ea20e0f3eef0c509201b91ee307a5be4d0ea489
+    with:
+      coverage-source: app
+      coverage-min: 90
+
+  alembic_python_check:
+    needs: [ruff, mypy, tests]
+    uses: RideTrip-tour/ci-templates/.github/workflows/python-alembic-check.yml@1ea20e0f3eef0c509201b91ee307a5be4d0ea489
+  
+
+  build:
+    needs: [ruff, tests, mypy, alembic_python_check]
+    if: github.event_name == 'push'
+    uses: RideTrip-tour/ci-templates/.github/workflows/docker-build-push.yml@1ea20e0f3eef0c509201b91ee307a5be4d0ea489
+    with:
+      namespace: ${{ vars.DOCKERHUB_NAMESPACE || 'ride2trip' }}
+      service-name: ${{ vars.SERVICE_AUTH_NAME || 'profile-service' }}
+      tag-prefix: dev
+    secrets: inherit
+
+  alembic_check:
+    needs: build
+    uses: RideTrip-tour/ci-templates/.github/workflows/swarm-alembic-check.yml@1ea20e0f3eef0c509201b91ee307a5be4d0ea489
+    with:
+      service-name: ${{ vars.SERVICE_AUTH_NAME || 'profile-service' }}
+      image-ref: ${{ needs.build.outputs.image_ref }}
+      data-network: ${{ vars.DATA_NETWORK || 'data-network' }}
+      db-secret-prefix: ${{ vars.DB_AUTH_SECRET_PREFIX || 'DB_PROFILE_SERVICE'}}
+      environment: DEV
+    secrets: inherit
+
+  migrate:
+    needs: [build, alembic_check]
+    uses: RideTrip-tour/ci-templates/.github/workflows/swarm-migrate.yml@1ea20e0f3eef0c509201b91ee307a5be4d0ea489
+    with:
+      service-name: ${{ vars.SERVICE_AUTH_NAME || 'profile-service' }}
+      image-ref: ${{ needs.build.outputs.image_ref }}
+      data-network: ${{ vars.DATA_NETWORK || 'data-network' }}
+      db-secret-prefix: ${{ vars.DB_AUTH_SECRET_PREFIX || 'DB_PROFILE_SERVICE'}}
+      environment: DEV
+    secrets: inherit
+
+  deploy:
+    needs: [build, migrate]
+    uses: RideTrip-tour/ci-templates/.github/workflows/swarm-deploy.yml@1ea20e0f3eef0c509201b91ee307a5be4d0ea489
+    with:
+      image-ref: ${{ needs.build.outputs.image_ref }}
+      swarm-service: ${{ vars.AUTH_SWARM_SERVICE || 'apps_profile-service' }}
+      environment: DEV
+    secrets: inherit
+
+  healthcheck:
+    needs: deploy
+    uses: RideTrip-tour/ci-templates/.github/workflows/swarm-healthcheck.yml@1ea20e0f3eef0c509201b91ee307a5be4d0ea489
+    with:
+      service-name: ${{ vars.SERVICE_AUTH_NAME || 'profile-service' }}
+      app-name: ${{ vars.APP_NAME || 'profile' }}
+      data-network: ${{ vars.DATA_NETWORK || 'data-network' }}
+      environment: DEV
+    secrets: inherit
+
+  notify:
+    needs: [ruff, tests, mypy, build, alembic_check, migrate, deploy, healthcheck]
+    if: ${{ always() && (github.event_name == 'push' || contains(needs.*.result, 'failure')) }}
+    uses: RideTrip-tour/ci-templates/.github/workflows/telegram-notify.yml@1ea20e0f3eef0c509201b91ee307a5be4d0ea489
+    with:
+      service-name: ${{ vars.SERVICE_AUTH_NAME || 'profile-service' }}
+      environment: DEV
+      swarm-service: ${{ vars.AUTH_SWARM_SERVICE || 'apps_profile-service' }}
+      results-json: ${{ toJSON(needs) }}
+      image-ref: ${{ needs.build.outputs.image_ref }}
+    secrets: inherit
