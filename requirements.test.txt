@@ -69,7 +69,7 @@ iniconfig==2.3.0
     # via pytest
 internal-client @ git+https://github.com/RideTrip-tour/internal_client.git@02beab80fa79eb6533f2be4f822e455b9f996cfe
     # via -r requirements.txt
-internal-middleware @ git+https://github.com/RideTrip-tour/middlewares.git@b2950e424cfd812508fe5c59cc766c8d8a0412ff
+internal-middleware @ git+https://github.com/RideTrip-tour/middlewares.git@a73f358077acfa0855d9e901a0b4ebe1015b298f
     # via -r requirements.txt
 librt==0.16.0
     # via mypy
