@@ -1,15 +1,14 @@
 import logging
 
-from initial_client import InitialClient
-from internal_middleware.context import user_claims
+from internal_client import InternalClient
+from internal_middleware.context import request_id_var, user_claims
 
-from app.middlerware.context import request_id_var
 from config import settings
 
 logger = logging.getLogger(__name__)
 
 
-class GatewayClient(InitialClient):
+class GatewayClient(InternalClient):
     def __init__(self):
         super().__init__(
             base_url=settings.gateway_url,
