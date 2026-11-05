@@ -4,6 +4,7 @@ from fastapi import HTTPException, Request, status
 
 from app.utils.converters import convert_value_to_int
 from app.utils.validators import require_or_unauthorized
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -48,3 +49,13 @@ def can_view_profile(request: Request, user_id: int, show_profile: bool) -> bool
         )
         return False
     return True
+
+
+async def require_auth_service(request: Request) -> None:
+    client_type = request.headers.get("X-Client-Type")
+
+    if client_type != settings.auth_service_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access allowed only for auth service",
+        )

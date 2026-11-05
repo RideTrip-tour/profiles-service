@@ -139,11 +139,36 @@ async def test_create_profile_uses_current_user_id(
     manager = override_manager(StubProfileManager())
     monkeypatch.setattr("app.routes.profiles_routes.get_current_user_id", lambda _: 7)
 
-    response = await client.post("/api/profile/create", json={"first_name": "Ann"})
+    response = await client.post(
+        "/api/profile/create",
+        json={"first_name": "Ann"},
+        headers={"X-Client-Type": "auth"},
+    )
 
     assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["user_id"] == 7
     assert manager.calls == [("create_profile", 7, expected_payload(first_name="Ann"))]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "client_type",
+    ["user", "another_service"],
+)
+async def test_create_profile_forbidden_for_non_auth_service(
+    client, override_manager, client_type
+):
+    manager = override_manager(StubProfileManager())
+
+    response = await client.post(
+        "/api/profile/create",
+        json={"first_name": "Ann"},
+        headers={"X-Client-Type": client_type},
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json() == {"detail": "Access allowed only for auth service"}
+    assert manager.calls == []
 
 
 @pytest.mark.asyncio
