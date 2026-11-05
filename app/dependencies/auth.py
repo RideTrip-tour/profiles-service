@@ -51,7 +51,7 @@ def can_view_profile(request: Request, user_id: int, show_profile: bool) -> bool
     return True
 
 
-async def require_auth_service(request: Request) -> None:
+def require_auth_service(request: Request) -> None:
     client_type = request.headers.get("X-Client-Type")
 
     if client_type != settings.auth_service_id:
