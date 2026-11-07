@@ -7,14 +7,12 @@ from app.dependencies.auth import (
     can_view_profile,
     get_current_profile_id,
     get_current_user_id,
-    require_auth_service,
 )
 from app.dependencies.profiles import get_profile_manager
 from app.schemas.profiles_schemas import (
     FavoriteLocationCreate,
     FavoriteLocationResponse,
     FavoriteLocationsResponse,
-    ProfileCreate,
     ProfileHiddenResponse,
     ProfileResponse,
     ProfileSettings,
@@ -26,32 +24,6 @@ from app.services.profiles_manager import ProfileManager
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/profile", tags=["Profiles"])
-
-
-@router.post(
-    "/create",
-    status_code=status.HTTP_201_CREATED,
-    response_model=ProfileResponse,
-    dependencies=[Depends(require_auth_service)],
-    responses={
-        status.HTTP_403_FORBIDDEN: {
-            "description": "Access allowed only for auth service",
-        },
-    },
-)
-async def create_new_profile(
-    payload: ProfileCreate,
-    request: Request,
-    manager: Annotated[ProfileManager, Depends(get_profile_manager)],
-):
-    """
-    Создание профиля пользователя.
-
-    Ручка предназначена исключительно для внутреннего использования сервисом auth.
-    Вызов из пользовательского клиента и других внутренних сервисов запрещён.
-    """
-    user_id = get_current_user_id(request)
-    return await manager.create_profile(user_id, payload)
 
 
 @router.post(

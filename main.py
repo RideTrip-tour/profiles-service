@@ -14,6 +14,7 @@ from app.middlerware.request_context import (
     # user_context_middleware,
 )
 from app.routes.admin_routes import router as admin_router
+from app.routes.internal_routes import router as internal_router
 from app.routes.profiles_routes import router as user_router
 from app.utils.logging import LOGGING_CONFIG
 from config import settings
@@ -53,6 +54,9 @@ def create_app() -> FastAPI:
 
     # Подключаем пользовательские роутеры
     app.include_router(user_router)
+
+    # Подключаем внутренние роутеры
+    app.include_router(internal_router)
 
     # Подключаем администратоские роутеры
     app.include_router(admin_router)

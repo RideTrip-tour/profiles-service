@@ -137,10 +137,10 @@ async def test_create_profile_uses_current_user_id(
     client, override_manager, monkeypatch
 ):
     manager = override_manager(StubProfileManager())
-    monkeypatch.setattr("app.routes.profiles_routes.get_current_user_id", lambda _: 7)
+    monkeypatch.setattr("app.routes.internal_routes.get_current_user_id", lambda _: 7)
 
     response = await client.post(
-        "/api/profile/create",
+        "/api/internal/profile/create",
         json={"first_name": "Ann"},
         headers={"X-Client-Type": "auth"},
     )
@@ -161,20 +161,20 @@ async def test_create_profile_forbidden_for_non_auth_service(
     manager = override_manager(StubProfileManager())
 
     response = await client.post(
-        "/api/profile/create",
+        "/api/internal/profile/create",
         json={"first_name": "Ann"},
         headers={"X-Client-Type": client_type},
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert response.json() == {"detail": "Access allowed only for auth service"}
+    assert response.json() == {"detail": "Access denied"}
     assert manager.calls == []
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("method", ["GET", "PATCH", "DELETE"])
 async def test_create_profile_not_allowed(client, method):
-    response = await client.request(method, "/api/profile/create")
+    response = await client.request(method, "/api/internal/profile/create")
 
     assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
     assert response.headers["allow"] == "POST"
