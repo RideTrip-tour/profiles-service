@@ -33,6 +33,9 @@ from app.crud.profiles_crud import (
     delete_profile_by_user_id as crud_delete_profile_by_user_id,
 )
 from app.crud.profiles_crud import (
+    delete_profile_permanently_by_user_id as crud_delete_profile_permanently_by_user_id,
+)
+from app.crud.profiles_crud import (
     get_profile_by_id as crud_get_profile_by_id,
 )
 from app.crud.profiles_crud import (
@@ -40,6 +43,9 @@ from app.crud.profiles_crud import (
 )
 from app.crud.profiles_crud import (
     get_profile_id_by_user_id as crud_get_profile_id_by_user_id,
+)
+from app.crud.profiles_crud import (
+    restore_profile_by_user_id as crud_restore_profile_by_user_id,
 )
 from app.crud.profiles_crud import (
     update_profile_by_id as crud_update_profile_by_id,
@@ -168,6 +174,12 @@ class ProfileManager:
         )
         return profile
 
+    async def restore_profile_by_user_id(self, user_id: int):
+        profile = await crud_restore_profile_by_user_id(self.db, user_id)
+        self._raise_not_found(profile)
+        logger.info("Profile updated: profile_id=%s", profile.id)
+        return profile
+
     async def update_profile_by_id(self, profile_id: int, payload: ProfileUpdate):
         await self._validate_city_country(payload)
         profile = await crud_update_profile_by_id(self.db, profile_id, payload)
@@ -180,6 +192,17 @@ class ProfileManager:
         self._raise_not_found(deleted)
         await self.gateway_client.delete_current_user()
         logger.info("Profile deleted: user_id=%s", user_id)
+
+    async def delete_profile_permanently_by_user_id(self, user_id: int) -> None:
+        deleted = await crud_delete_profile_permanently_by_user_id(self.db, user_id)
+        logger.info(
+            (
+                "Profile permanently deleted: user_id=%s"
+                if deleted
+                else "Profile already deleted or not found: user_id=%s"
+            ),
+            user_id,
+        )
 
     async def delete_profile_by_id(self, profile_id: int) -> None:
         deleted = await crud_delete_profile_by_id(self.db, profile_id)

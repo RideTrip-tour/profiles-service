@@ -10,7 +10,7 @@ from app.schemas.admin_schemas import ProfileCreate as AdminProfileCreate
 from app.schemas.profiles_schemas import ProfileCreate, ProfileUpdate
 
 
-async def _delete_profile(db: AsyncSession, profile: Profile | None) -> bool:
+async def _soft_delete_profile(db: AsyncSession, profile: Profile | None) -> bool:
     if profile is None:
         return False
 
@@ -23,10 +23,26 @@ async def _delete_profile(db: AsyncSession, profile: Profile | None) -> bool:
     return True
 
 
+async def _delete_profile(db: AsyncSession, profile: Profile | None) -> bool:
+    if profile is None:
+        return False
+
+    await db.delete(profile)
+    await db.commit()
+    return True
+
+
 async def _update_profile(
     db: AsyncSession, profile: Profile, payload: ProfileUpdate
 ) -> Profile:
     return await _update_model(db, profile, payload)
+
+
+async def _restore_profile(db: AsyncSession, profile: Profile) -> Profile:
+    profile.restore()
+    await db.commit()
+    await db.refresh(profile)
+    return profile
 
 
 async def _create_new_profile(
@@ -60,12 +76,14 @@ async def _find_by_id(db: AsyncSession, profile_id: int) -> Profile | None:
     ).scalar_one_or_none()
 
 
-async def _find_by_user_id(db: AsyncSession, user_id: int) -> Profile | None:
+async def _find_by_user_id(
+    db: AsyncSession, user_id: int, is_active: bool = True
+) -> Profile | None:
     return (
         await db.execute(
             select(Profile)
             .options(joinedload(Profile.settings), selectinload(Profile.favorites))
-            .where(Profile.user_id == user_id, Profile.is_active.is_(True))
+            .where(Profile.user_id == user_id, Profile.is_active.is_(is_active))
         )
     ).scalar_one_or_none()
 
@@ -109,6 +127,15 @@ async def delete_profile_by_user_id(db: AsyncSession, user_id: int) -> bool:
     """
     profile = await _find_by_user_id(db, user_id)
 
+    return await _soft_delete_profile(db, profile)
+
+
+async def delete_profile_permanently_by_user_id(db: AsyncSession, user_id: int) -> bool:
+    """
+    Постоянное удаление профиля по user_id.
+    Возвращает True если удален, иначе False.
+    """
+    profile = await _find_by_user_id(db, user_id, is_active=False)
     return await _delete_profile(db, profile)
 
 
@@ -119,7 +146,7 @@ async def delete_profile_by_id(db: AsyncSession, profile_id: int) -> bool:
     """
     profile = await _find_by_id(db, profile_id)
 
-    return await _delete_profile(db, profile)
+    return await _soft_delete_profile(db, profile)
 
 
 async def update_profile_by_user_id(
@@ -138,3 +165,10 @@ async def update_profile_by_id(
     if not profile:
         return None
     return await _update_profile(db, profile, payload)
+
+
+async def restore_profile_by_user_id(db: AsyncSession, user_id: int) -> Profile | None:
+    profile = await _find_by_user_id(db, user_id, is_active=False)
+    if not profile:
+        return None
+    return await _restore_profile(db, profile)

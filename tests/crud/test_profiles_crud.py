@@ -1,4 +1,5 @@
 from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
 
 import pytest
 
@@ -13,6 +14,8 @@ from app.crud.profiles_crud import (
     get_profile_id_by_user_id,
     update_profile_by_id,
     update_profile_by_user_id,
+    restore_profile_by_user_id,
+    delete_profile_permanently_by_user_id,
 )
 from app.db.models import Profile
 
@@ -286,3 +289,86 @@ async def test_update_profile(
 
     assert result is expected
     update.assert_awaited_once_with(db, profile, payload)
+
+
+@pytest.mark.asyncio
+async def test_restore_profile_by_user_id(db, profile):
+    profile.is_active = False
+    profile.deleted_at = datetime.now(UTC)
+
+    with patch(
+        "app.crud.profiles_crud._find_by_user_id",
+        new=AsyncMock(return_value=profile),
+    ) as find_profile:
+        result = await restore_profile_by_user_id(db, 7)
+
+    assert result is profile
+    assert profile.is_active is True
+    assert profile.deleted_at is None
+
+    find_profile.assert_awaited_once_with(
+        db,
+        7,
+        is_active=False,
+    )
+    db.commit.assert_awaited_once()
+    db.refresh.assert_awaited_once_with(profile)
+
+
+@pytest.mark.asyncio
+async def test_restore_profile_returns_none_when_not_found(db):
+    with patch(
+        "app.crud.profiles_crud._find_by_user_id",
+        new=AsyncMock(return_value=None),
+    ) as find_profile:
+        result = await restore_profile_by_user_id(db, 7)
+
+    assert result is None
+
+    find_profile.assert_awaited_once_with(
+        db,
+        7,
+        is_active=False,
+    )
+    db.commit.assert_not_awaited()
+    db.refresh.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_delete_profile_permanently_by_user_id(db, profile):
+    profile.is_active = False
+    profile.deleted_at = datetime.now(UTC)
+
+    with patch(
+        "app.crud.profiles_crud._find_by_user_id",
+        new=AsyncMock(return_value=profile),
+    ) as find_profile:
+        result = await delete_profile_permanently_by_user_id(db, 7)
+
+    assert result is True
+
+    find_profile.assert_awaited_once_with(
+        db,
+        7,
+        is_active=False,
+    )
+    db.delete.assert_awaited_once_with(profile)
+    db.commit.assert_awaited_once()
+
+@pytest.mark.asyncio
+async def test_delete_profile_permanently_returns_false_when_not_found(db):
+    with patch(
+        "app.crud.profiles_crud._find_by_user_id",
+        new=AsyncMock(return_value=None),
+    ) as find_profile:
+        result = await delete_profile_permanently_by_user_id(db, 7)
+
+    assert result is False
+
+    find_profile.assert_awaited_once_with(
+        db,
+        7,
+        is_active=False,
+    )
+    db.delete.assert_not_awaited()
+    db.commit.assert_not_awaited()

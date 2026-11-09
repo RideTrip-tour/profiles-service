@@ -132,6 +132,15 @@ async def delete_profile_by_id(
     await manager.delete_profile_by_user_id(get_current_user_id(request))
 
 
+# сделать доступным только для auth-service
+@router.delete("/me/permanent", status_code=status.HTTP_204_NO_CONTENT)
+async def permanently_delete_profile(
+    request: Request,
+    manager: ProfileManager = Depends(get_profile_manager),
+):
+    await manager.delete_profile_permanently_by_user_id(get_current_user_id(request))
+
+
 @router.delete(
     "/me/favorite-locations/{location_id:int}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -171,3 +180,12 @@ async def update_settings(
         get_current_profile_id(request),
         payload,
     )
+
+
+# сделать доступным только для auth-service
+@router.post("/me/restore", status_code=status.HTTP_204_NO_CONTENT)
+async def restore_profile(
+    request: Request,
+    manager: ProfileManager = Depends(get_profile_manager),
+):
+    await manager.restore_profile_by_user_id(get_current_user_id(request))

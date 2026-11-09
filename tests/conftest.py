@@ -64,6 +64,7 @@ def db():
     db = MagicMock()
     db.execute = AsyncMock()
     db.commit = AsyncMock()
+    db.refresh = AsyncMock()
     db.delete = AsyncMock()
     return db
 

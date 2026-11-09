@@ -82,6 +82,12 @@ class StubProfileManager:
     async def delete_profile_by_user_id(self, user_id):
         self.calls.append(("delete_profile_by_user_id", user_id))
 
+    async def delete_profile_permanently_by_user_id(self, user_id):
+        self.calls.append(("delete_profile_permanently_by_user_id", user_id))
+
+    async def restore_profile_by_user_id(self, user_id):
+        self.calls.append(("restore_profile_by_user_id", user_id))
+
     async def get_favorite_location(self, user_id):
         self.calls.append(("get_favorite_location", user_id))
         return [
@@ -536,6 +542,70 @@ async def test_update_my_profile_settings_unauthorized(
         "/api/profile/me/settings",
         json={"show_profile": False},
     )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json()["detail"] == "Unauthorized"
+    assert manager.calls == []
+
+
+@pytest.mark.asyncio
+async def test_permanently_delete_profile_uses_current_user_id(
+    client, override_manager, monkeypatch
+):
+    manager = override_manager(StubProfileManager())
+    monkeypatch.setattr(
+        "app.routes.profiles_routes.get_current_user_id",
+        lambda _: 7,
+    )
+
+    response = await client.delete("/api/profile/me/permanent")
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert response.content == b""
+    assert manager.calls == [
+        ("delete_profile_permanently_by_user_id", 7),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_restore_profile_uses_current_user_id(
+    client, override_manager, monkeypatch
+):
+    manager = override_manager(StubProfileManager())
+    monkeypatch.setattr(
+        "app.routes.profiles_routes.get_current_user_id",
+        lambda _: 7,
+    )
+
+    response = await client.post("/api/profile/me/restore")
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert response.content == b""
+    assert manager.calls == [
+        ("restore_profile_by_user_id", 7),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_permanently_delete_profile_unauthorized(
+    client, override_manager
+):
+    manager = override_manager(StubProfileManager())
+
+    response = await client.delete("/api/profile/me/permanent")
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json()["detail"] == "Unauthorized"
+    assert manager.calls == []
+
+
+@pytest.mark.asyncio
+async def test_restore_profile_unauthorized(
+    client, override_manager
+):
+    manager = override_manager(StubProfileManager())
+
+    response = await client.post("/api/profile/me/restore")
+
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert response.json()["detail"] == "Unauthorized"
     assert manager.calls == []
