@@ -1,4 +1,5 @@
 import logging
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, status
 
@@ -12,7 +13,6 @@ from app.schemas.profiles_schemas import (
     FavoriteLocationCreate,
     FavoriteLocationResponse,
     FavoriteLocationsResponse,
-    ProfileCreate,
     ProfileHiddenResponse,
     ProfileResponse,
     ProfileSettings,
@@ -27,18 +27,6 @@ router = APIRouter(prefix="/api/profile", tags=["Profiles"])
 
 
 @router.post(
-    "/create", status_code=status.HTTP_201_CREATED, response_model=ProfileResponse
-)
-async def create_new_profile(
-    payload: ProfileCreate,
-    request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
-):
-    user_id = get_current_user_id(request)
-    return await manager.create_profile(user_id, payload)
-
-
-@router.post(
     "/me/favorite-locations",
     status_code=status.HTTP_201_CREATED,
     response_model=FavoriteLocationResponse,
@@ -46,7 +34,7 @@ async def create_new_profile(
 async def add_favorite_location(
     payload: FavoriteLocationCreate,
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: Annotated[ProfileManager, Depends(get_profile_manager)],
 ):
     return await manager.add_favorite_location(
         get_current_user_id(request),
@@ -57,7 +45,7 @@ async def add_favorite_location(
 @router.get("/me", response_model=ProfileResponse)
 async def get_my_profile(
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: Annotated[ProfileManager, Depends(get_profile_manager)],
 ):
     return await manager.get_profile_by_user_id(get_current_user_id(request))
 
@@ -68,7 +56,7 @@ async def get_my_profile(
 )
 async def get_favorite_locations(
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: Annotated[ProfileManager, Depends(get_profile_manager)],
 ):
     return FavoriteLocationsResponse(
         location_ids=[
