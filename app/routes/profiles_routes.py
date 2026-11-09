@@ -1,14 +1,13 @@
 import logging
-from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Request, status
 
 from app.dependencies.auth import (
     can_view_profile,
     get_current_profile_id,
     get_current_user_id,
 )
-from app.dependencies.profiles import get_profile_manager
+from app.dependencies.profiles import ProfileManagerDep
 from app.schemas.profiles_schemas import (
     FavoriteLocationCreate,
     FavoriteLocationResponse,
@@ -19,7 +18,6 @@ from app.schemas.profiles_schemas import (
     ProfileSettingsUpdate,
     ProfileUpdate,
 )
-from app.services.profiles_manager import ProfileManager
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +32,7 @@ router = APIRouter(prefix="/api/profile", tags=["Profiles"])
 async def add_favorite_location(
     payload: FavoriteLocationCreate,
     request: Request,
-    manager: Annotated[ProfileManager, Depends(get_profile_manager)],
+    manager: ProfileManagerDep,
 ):
     return await manager.add_favorite_location(
         get_current_user_id(request),
@@ -45,7 +43,7 @@ async def add_favorite_location(
 @router.get("/me", response_model=ProfileResponse)
 async def get_my_profile(
     request: Request,
-    manager: Annotated[ProfileManager, Depends(get_profile_manager)],
+    manager: ProfileManagerDep,
 ):
     return await manager.get_profile_by_user_id(get_current_user_id(request))
 
@@ -56,7 +54,7 @@ async def get_my_profile(
 )
 async def get_favorite_locations(
     request: Request,
-    manager: Annotated[ProfileManager, Depends(get_profile_manager)],
+    manager: ProfileManagerDep,
 ):
     return FavoriteLocationsResponse(
         location_ids=[
@@ -75,7 +73,7 @@ async def get_favorite_locations(
 async def get_favorite_locations_by_user_id(
     user_id: int,
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: ProfileManagerDep,
 ):
     show_profile = await manager.get_show_profile(
         await manager.get_profile_id_or_raise(user_id)
@@ -90,7 +88,7 @@ async def get_favorite_locations_by_user_id(
 async def get_profile_by_id(
     user_id: int,
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: ProfileManagerDep,
 ):
     show_profile = await manager.get_show_profile(
         await manager.get_profile_id_or_raise(user_id)
@@ -105,7 +103,7 @@ async def get_profile_by_id(
 async def update_my_profile(
     payload: ProfileUpdate,
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: ProfileManagerDep,
 ):
     return await manager.update_profile_by_user_id(
         get_current_user_id(request), payload
@@ -115,7 +113,7 @@ async def update_my_profile(
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_profile_by_id(
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: ProfileManagerDep,
 ):
     await manager.delete_profile_by_user_id(get_current_user_id(request))
 
@@ -127,7 +125,7 @@ async def delete_profile_by_id(
 async def delete_favorite_location(
     location_id: int,
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: ProfileManagerDep,
 ):
     await manager.delete_favorite_location(
         get_current_user_id(request),
@@ -141,7 +139,7 @@ async def delete_favorite_location(
 )
 async def get_settings(
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: ProfileManagerDep,
 ):
     return await manager.get_profile_settings(get_current_profile_id(request))
 
@@ -153,7 +151,7 @@ async def get_settings(
 async def update_settings(
     request: Request,
     payload: ProfileSettingsUpdate,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: ProfileManagerDep,
 ):
     return await manager.update_profile_settings(
         get_current_profile_id(request),

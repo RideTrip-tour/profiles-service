@@ -1,9 +1,8 @@
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Request, status
 
-from app.dependencies.profiles import get_profile_manager
+from app.dependencies.profiles import ProfileManagerDep
 from app.schemas.admin_schemas import ProfileCreate
 from app.schemas.profiles_schemas import ProfileResponse, ProfileUpdate
-from app.services.profiles_manager import ProfileManager
 
 router = APIRouter(prefix="/api/admin/profile", tags=["Admin Profile"])
 
@@ -12,7 +11,7 @@ router = APIRouter(prefix="/api/admin/profile", tags=["Admin Profile"])
 async def create_new_profile(
     payload: ProfileCreate,
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: ProfileManagerDep,
 ):
     return await manager.admin_create_profile(payload)
 
@@ -21,7 +20,7 @@ async def create_new_profile(
 async def get_profile_by_id(
     profile_id: int,
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: ProfileManagerDep,
 ):
     return await manager.get_profile_by_id(profile_id)
 
@@ -30,7 +29,7 @@ async def get_profile_by_id(
 async def get_profile_by_user_id(
     user_id: int,
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: ProfileManagerDep,
 ):
     return await manager.get_profile_by_user_id(user_id)
 
@@ -40,7 +39,7 @@ async def update_profile_by_id(
     profile_id: int,
     payload: ProfileUpdate,
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: ProfileManagerDep,
 ):
     return await manager.update_profile_by_id(profile_id, payload)
 
@@ -50,7 +49,7 @@ async def update_profile_by_user_id(
     user_id: int,
     payload: ProfileUpdate,
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: ProfileManagerDep,
 ):
     return await manager.update_profile_by_user_id(user_id, payload)
 
@@ -59,7 +58,7 @@ async def update_profile_by_user_id(
 async def delete_profile_by_user_id(
     user_id: int,
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: ProfileManagerDep,
 ):
     await manager.delete_profile_by_user_id(user_id)
 
@@ -68,6 +67,6 @@ async def delete_profile_by_user_id(
 async def delete_profile_by_id(
     profile_id: int,
     request: Request,
-    manager: ProfileManager = Depends(get_profile_manager),
+    manager: ProfileManagerDep,
 ):
     await manager.delete_profile_by_id(profile_id)

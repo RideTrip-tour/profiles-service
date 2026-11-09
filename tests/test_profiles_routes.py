@@ -82,6 +82,12 @@ class StubProfileManager:
     async def delete_profile_by_user_id(self, user_id):
         self.calls.append(("delete_profile_by_user_id", user_id))
 
+    async def delete_profile_permanently_by_user_id(self, user_id):
+        self.calls.append(("delete_profile_permanently_by_user_id", user_id))
+
+    async def restore_profile_by_user_id(self, user_id):
+        self.calls.append(("restore_profile_by_user_id", user_id))
+
     async def get_favorite_location(self, user_id):
         self.calls.append(("get_favorite_location", user_id))
         return [
@@ -563,4 +569,88 @@ async def test_update_my_profile_settings_unauthorized(
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert response.json()["detail"] == "Unauthorized"
+    assert manager.calls == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("method", "url", "manager_method"),
+    [
+        (
+            "delete",
+            "/api/internal/profile/me/permanent",
+            "delete_profile_permanently_by_user_id",
+        ),
+        (
+            "post",
+            "/api/internal/profile/me/restore",
+            "restore_profile_by_user_id",
+        ),
+    ],
+)
+async def test_profile_lifecycle_uses_current_user_id(
+    client, override_manager, monkeypatch, method, url, manager_method
+):
+    manager = override_manager(StubProfileManager())
+
+    monkeypatch.setattr(
+        "app.routes.internal_routes.get_current_user_id",
+        lambda _: 7,
+    )
+
+    response = await getattr(client, method)(
+        url,
+        headers={"X-Client-Type": "auth"},
+    )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert response.content == b""
+    assert manager.calls == [(manager_method, 7)]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("method", "url"),
+    [
+        ("delete", "/api/internal/profile/me/permanent"),
+        ("post", "/api/internal/profile/me/restore"),
+    ],
+)
+async def test_profile_lifecycle_unauthorized(client, override_manager, method, url):
+    manager = override_manager(StubProfileManager())
+
+    response = await getattr(client, method)(
+        url,
+        headers={"X-Client-Type": "auth"},
+    )
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json()["detail"] == "Unauthorized"
+    assert manager.calls == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("method", "url"),
+    [
+        ("delete", "/api/internal/profile/me/permanent"),
+        ("post", "/api/internal/profile/me/restore"),
+    ],
+)
+@pytest.mark.parametrize(
+    "client_type",
+    ["user", "another_service"],
+)
+async def test_profile_lifecycle_forbidden_for_non_auth_service(
+    client, override_manager, method, url, client_type
+):
+    manager = override_manager(StubProfileManager())
+
+    response = await getattr(client, method)(
+        url,
+        headers={"X-Client-Type": client_type},
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json() == {"detail": "Access denied"}
     assert manager.calls == []
