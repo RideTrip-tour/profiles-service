@@ -586,9 +586,7 @@ async def test_restore_profile_uses_current_user_id(
 
 
 @pytest.mark.asyncio
-async def test_permanently_delete_profile_unauthorized(
-    client, override_manager
-):
+async def test_permanently_delete_profile_unauthorized(client, override_manager):
     manager = override_manager(StubProfileManager())
 
     response = await client.delete("/api/profile/me/permanent")
@@ -599,9 +597,7 @@ async def test_permanently_delete_profile_unauthorized(
 
 
 @pytest.mark.asyncio
-async def test_restore_profile_unauthorized(
-    client, override_manager
-):
+async def test_restore_profile_unauthorized(client, override_manager):
     manager = override_manager(StubProfileManager())
 
     response = await client.post("/api/profile/me/restore")

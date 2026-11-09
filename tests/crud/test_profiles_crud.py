@@ -1,5 +1,5 @@
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -9,13 +9,13 @@ from app.crud.profiles_crud import (
     create_profile,
     delete_profile_by_id,
     delete_profile_by_user_id,
+    delete_profile_permanently_by_user_id,
     get_profile_by_id,
     get_profile_by_user_id,
     get_profile_id_by_user_id,
+    restore_profile_by_user_id,
     update_profile_by_id,
     update_profile_by_user_id,
-    restore_profile_by_user_id,
-    delete_profile_permanently_by_user_id,
 )
 from app.db.models import Profile
 
@@ -354,6 +354,7 @@ async def test_delete_profile_permanently_by_user_id(db, profile):
     )
     db.delete.assert_awaited_once_with(profile)
     db.commit.assert_awaited_once()
+
 
 @pytest.mark.asyncio
 async def test_delete_profile_permanently_returns_false_when_not_found(db):
