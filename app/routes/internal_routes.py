@@ -41,6 +41,7 @@ async def create_new_profile(
     user_id = get_current_user_id(request)
     return await manager.create_profile(user_id, payload)
 
+
 @router.delete(
     "/me/permanent",
     status_code=status.HTTP_204_NO_CONTENT,
