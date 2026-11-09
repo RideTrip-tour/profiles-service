@@ -175,8 +175,9 @@ class ProfileManager:
         return profile
 
     async def restore_profile_by_user_id(self, user_id: int):
-        profile = await crud_restore_profile_by_user_id(self.db, user_id)
-        self._raise_not_found(profile)
+        profile = self.get_or_raise_not_found(
+            await crud_restore_profile_by_user_id(self.db, user_id)
+        )
         logger.info("Profile updated: profile_id=%s", profile.id)
         return profile
 
