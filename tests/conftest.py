@@ -1,6 +1,6 @@
 import os
 import sys
-from collections.abc import Generator
+from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -85,7 +85,7 @@ def result_mock():
 
 
 @pytest_asyncio.fixture
-async def client(app) -> Generator[AsyncClient, None, None]:
+async def client(app) -> AsyncGenerator[AsyncClient, None, None]:
 
     transport = ASGITransport(app=app)
     async with AsyncClient(

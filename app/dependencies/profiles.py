@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,3 +31,6 @@ async def get_current_profile(
     profile_manager: ProfileManager = Depends(get_profile_manager),
 ):
     return await profile_manager.get_profile_by_id(profile_id)
+
+
+ProfileManagerDep = Annotated[ProfileManager, Depends(get_profile_manager)]

@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     gateway_url: str = "http://gateway:8000"
     service_id: str = "profile"
     service_token: str = ""
+    auth_service_id: str = "auth"
 
     # =========================
     # Database
