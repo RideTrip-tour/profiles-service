@@ -11,7 +11,7 @@ class ProfileCacheKeys:
 
 
 class DeviceCacheKeys:
-    """ "Формирует ключи кэша, связанные с устройствами профиля."""
+    """Формирует ключи кэша, связанные с устройствами профиля."""
 
     @staticmethod
     def get_device(profile_id: int, device_id: str) -> str:

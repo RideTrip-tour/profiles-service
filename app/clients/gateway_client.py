@@ -79,6 +79,6 @@ class GatewayClient(InternalClient):
         await self.request(
             method="DELETE",
             user_context=self._get_user_context(),
-            path="/api/auth/me",
+            path="/api/users/me",
             request_id=request_id_var.get(),
         )

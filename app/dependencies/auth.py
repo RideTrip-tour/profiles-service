@@ -51,7 +51,7 @@ def can_view_profile(request: Request, user_id: int, show_profile: bool) -> bool
 
 
 def require_services(*allowed_services: str):
-    async def dependency(request: Request) -> None:
+    def dependency(request: Request) -> None:
         client_type = request.headers.get("X-Client-Type")
 
         if client_type not in allowed_services:

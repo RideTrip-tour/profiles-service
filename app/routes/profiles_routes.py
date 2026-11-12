@@ -7,7 +7,7 @@ from app.dependencies.auth import (
     get_current_profile_id,
     get_current_user_id,
 )
-from app.dependencies.profiles import ProfileManagerDep
+from app.dependencies.profiles import LocationIdDep, ProfileManagerDep, UserIdDep
 from app.schemas.profiles_schemas import (
     FavoriteLocationCreate,
     FavoriteLocationResponse,
@@ -71,7 +71,7 @@ async def get_favorite_locations(
     response_model=FavoriteLocationsResponse | ProfileHiddenResponse,
 )
 async def get_favorite_locations_by_user_id(
-    user_id: int,
+    user_id: UserIdDep,
     request: Request,
     manager: ProfileManagerDep,
 ):
@@ -86,7 +86,7 @@ async def get_favorite_locations_by_user_id(
 
 @router.get("/{user_id:int}", response_model=ProfileResponse | ProfileHiddenResponse)
 async def get_profile_by_id(
-    user_id: int,
+    user_id: UserIdDep,
     request: Request,
     manager: ProfileManagerDep,
 ):
@@ -123,7 +123,7 @@ async def delete_profile_by_id(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_favorite_location(
-    location_id: int,
+    location_id: LocationIdDep,
     request: Request,
     manager: ProfileManagerDep,
 ):

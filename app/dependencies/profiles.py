@@ -1,11 +1,12 @@
 from typing import Annotated
 
-from fastapi import Depends, Request
+from fastapi import Depends, HTTPException, Path, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clients.gateway_client import GatewayClient
 from app.db.database import get_async_session
 from app.dependencies.auth import get_current_profile_id
+from app.schemas.constants import MAX_VALUE_INTEGER, MIN_VALUE_INTEGER
 from app.services.cache_manager import CacheManager
 from app.services.profiles_manager import ProfileManager
 
@@ -33,4 +34,21 @@ async def get_current_profile(
     return await profile_manager.get_profile_by_id(profile_id)
 
 
+def validate_path_id(path_id: str):
+    def validate(
+        value: int = Path(alias=path_id),
+    ) -> int:
+        if not MIN_VALUE_INTEGER <= value <= MAX_VALUE_INTEGER:
+            raise HTTPException(
+                status_code=404,
+                detail="Not Found",
+            )
+        return value
+
+    return validate
+
+
+UserIdDep = Annotated[int, Depends(validate_path_id("user_id"))]
+ProfileIdDep = Annotated[int, Depends(validate_path_id("profile_id"))]
+LocationIdDep = Annotated[int, Depends(validate_path_id("location_id"))]
 ProfileManagerDep = Annotated[ProfileManager, Depends(get_profile_manager)]
