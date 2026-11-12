@@ -66,24 +66,33 @@ async def _create_new_profile(
     return new_profile
 
 
-async def _find_by_id(db: AsyncSession, profile_id: int) -> Profile | None:
+async def _find_by_id(
+    db: AsyncSession, profile_id: int, is_active: bool | None = None
+) -> Profile | None:
+    conditions = [Profile.id == profile_id]
+    if is_active is not None:
+        conditions.append(Profile.is_active.is_(is_active))
     return (
         await db.execute(
             select(Profile)
             .options(joinedload(Profile.settings), selectinload(Profile.favorites))
-            .where(Profile.id == profile_id, Profile.is_active.is_(True))
+            .where(*conditions)
         )
     ).scalar_one_or_none()
 
 
 async def _find_by_user_id(
-    db: AsyncSession, user_id: int, is_active: bool = True
+    db: AsyncSession, user_id: int, is_active: bool | None = None
 ) -> Profile | None:
+
+    conditions = [Profile.user_id == user_id]
+    if is_active is not None:
+        conditions.append(Profile.is_active.is_(is_active))
     return (
         await db.execute(
             select(Profile)
             .options(joinedload(Profile.settings), selectinload(Profile.favorites))
-            .where(Profile.user_id == user_id, Profile.is_active.is_(is_active))
+            .where(*conditions)
         )
     ).scalar_one_or_none()
 
@@ -168,7 +177,9 @@ async def update_profile_by_id(
 
 
 async def restore_profile_by_user_id(db: AsyncSession, user_id: int) -> Profile | None:
-    profile = await _find_by_user_id(db, user_id, is_active=False)
-    if not profile:
-        return None
+    profile = await _find_by_user_id(db, user_id)
+
+    if not profile or profile.is_active:
+        return profile
+
     return await _restore_profile(db, profile)

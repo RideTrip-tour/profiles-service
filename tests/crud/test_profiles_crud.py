@@ -309,7 +309,6 @@ async def test_restore_profile_by_user_id(db, profile):
     find_profile.assert_awaited_once_with(
         db,
         7,
-        is_active=False,
     )
     db.commit.assert_awaited_once()
     db.refresh.assert_awaited_once_with(profile)
@@ -328,7 +327,6 @@ async def test_restore_profile_returns_none_when_not_found(db):
     find_profile.assert_awaited_once_with(
         db,
         7,
-        is_active=False,
     )
     db.commit.assert_not_awaited()
     db.refresh.assert_not_awaited()
