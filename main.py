@@ -27,7 +27,9 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Service is starting up...")
-    app.state.redis = await redis.Redis.from_url(settings.redis_url)
+    app.state.redis = await redis.Redis.from_url(
+        settings.redis_url, decode_responses=True
+    )
     yield
     await app.state.redis.aclose()
     await GatewayClient().close()

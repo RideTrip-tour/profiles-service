@@ -14,7 +14,7 @@ async def _soft_delete_profile(db: AsyncSession, profile: Profile | None) -> boo
     if profile is None:
         return False
 
-    if profile.deleted_at is not None:
+    if not profile.is_active and profile.deleted_at is not None:
         return True
 
     profile.soft_delete()

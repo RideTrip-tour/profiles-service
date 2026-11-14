@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, status
 
-from app.dependencies.profiles import ProfileManagerDep
+from app.dependencies.profiles import ProfileIdDep, ProfileManagerDep, UserIdDep
 from app.schemas.admin_schemas import ProfileCreate
 from app.schemas.profiles_schemas import ProfileResponse, ProfileUpdate
 
@@ -18,7 +18,7 @@ async def create_new_profile(
 
 @router.get("/{profile_id}", response_model=ProfileResponse)
 async def get_profile_by_id(
-    profile_id: int,
+    profile_id: ProfileIdDep,
     request: Request,
     manager: ProfileManagerDep,
 ):
@@ -27,7 +27,7 @@ async def get_profile_by_id(
 
 @router.get("/by-user/{user_id}", response_model=ProfileResponse)
 async def get_profile_by_user_id(
-    user_id: int,
+    user_id: UserIdDep,
     request: Request,
     manager: ProfileManagerDep,
 ):
@@ -36,7 +36,7 @@ async def get_profile_by_user_id(
 
 @router.patch("/{profile_id}", response_model=ProfileResponse)
 async def update_profile_by_id(
-    profile_id: int,
+    profile_id: ProfileIdDep,
     payload: ProfileUpdate,
     request: Request,
     manager: ProfileManagerDep,
@@ -46,7 +46,7 @@ async def update_profile_by_id(
 
 @router.patch("/by-user/{user_id}", response_model=ProfileResponse)
 async def update_profile_by_user_id(
-    user_id: int,
+    user_id: UserIdDep,
     payload: ProfileUpdate,
     request: Request,
     manager: ProfileManagerDep,
@@ -56,7 +56,7 @@ async def update_profile_by_user_id(
 
 @router.delete("/by-user/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_profile_by_user_id(
-    user_id: int,
+    user_id: UserIdDep,
     request: Request,
     manager: ProfileManagerDep,
 ):
@@ -65,7 +65,7 @@ async def delete_profile_by_user_id(
 
 @router.delete("/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_profile_by_id(
-    profile_id: int,
+    profile_id: ProfileIdDep,
     request: Request,
     manager: ProfileManagerDep,
 ):
