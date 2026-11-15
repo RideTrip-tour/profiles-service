@@ -21,8 +21,7 @@ from app.db.database import AsyncSessionLocal
 from app.services.cache_manager import CacheManager
 from app.services.devices_manager import DeviceManager
 from app.services.profiles_manager import ProfileManager
-
-# from app.utils.converters import convert_value_to_int
+from app.utils.converters import convert_value_to_int
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +147,7 @@ async def profile_context_middleware(request: Request, call_next):
     if _is_profile_context_excluded(request.url.path):
         return await call_next(request)
     if getattr(request.state, "user", None):
-        user_id = _extract_user_id(request.state.user)
+        user_id = convert_value_to_int(_extract_user_id(request.state.user))
         if user_id is None:
             return _unauthorized_response()
         async with AsyncSessionLocal() as session:
