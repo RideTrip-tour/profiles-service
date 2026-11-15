@@ -12,6 +12,8 @@ from fastapi.responses import JSONResponse
 from internal_middleware.user_context import _extract_user_id
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.celery.celery_app import celery_app
+from app.clients.celery_client import CeleryClient
 from app.clients.gateway_client import GatewayClient
 from app.db.database import AsyncSessionLocal
 
@@ -78,7 +80,10 @@ async def _get_profile_id(
     session: AsyncSession, cache: CacheManager, user_id: int
 ) -> int | None:
     profile_manager = ProfileManager(
-        db=session, cache=cache, gateway_client=GatewayClient()
+        db=session,
+        cache=cache,
+        gateway_client=GatewayClient(),
+        celery_client=CeleryClient(celery_app=celery_app),
     )
     return await profile_manager.get_profile_id(user_id=user_id)
 
