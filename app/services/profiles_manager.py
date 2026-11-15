@@ -4,6 +4,7 @@ from typing import TypeVar
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.clients.celery_client import CeleryClient
 from app.clients.gateway_client import GatewayClient
 from app.crud.favorite_locations_crud import (
     delete_favorite_location as crud_delete_favorite_location,
@@ -76,10 +77,12 @@ class ProfileManager:
         db: AsyncSession,
         cache: CacheManager,
         gateway_client: GatewayClient,
+        celery_client: CeleryClient,
     ):
         self.db = db
         self.cache = cache
         self.gateway_client = gateway_client
+        self.celery_client = celery_client
 
     async def create_profile(self, user_id: int, profile_in: ProfileCreate):
         existing_profile = await crud_get_profile_by_user_id(self.db, user_id)
@@ -191,7 +194,8 @@ class ProfileManager:
     async def delete_profile_by_user_id(self, user_id: int) -> None:
         deleted = await crud_delete_profile_by_user_id(self.db, user_id)
         self._raise_not_found(deleted)
-        await self.gateway_client.delete_current_user()
+        await self.celery_client.soft_delete_account(user_id=user_id)
+        # await self.gateway_client.delete_current_user()
         logger.info("Profile deleted: user_id=%s", user_id)
 
     async def delete_profile_permanently_by_user_id(self, user_id: int) -> None:

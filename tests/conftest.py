@@ -127,6 +127,13 @@ def redis_client():
 
 
 @pytest.fixture
+def celery_cleint():
+    client - MagicMock()
+    client.soft_delete_account = AsyncMock()
+    return client
+
+
+@pytest.fixture
 def today():
     return datetime.now(UTC).date()
 
@@ -151,9 +158,14 @@ def device_manager(cache_manager, db):
 
 
 @pytest.fixture
-def profile_manager(cache_manager, gateway_client, db):
+def profile_manager(cache_manager, gateway_client, db, celery_cleint):
 
-    return ProfileManager(db=db, cache=cache_manager, gateway_client=gateway_client)
+    return ProfileManager(
+        db=db,
+        cache=cache_manager,
+        gateway_client=gateway_client,
+        celery_client=celery_cleint,
+    )
 
 
 @pytest.fixture

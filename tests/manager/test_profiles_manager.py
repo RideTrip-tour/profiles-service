@@ -466,7 +466,10 @@ async def test_delete_profile_by_user_id_returns_none_on_success(
     result = await profile_manager.delete_profile_by_user_id(7)
 
     assert result is None
-    profile_manager.gateway_client.delete_current_user.assert_awaited_once_with()
+    profile_manager.celery_client.soft_delete_account.assert_awaited_once_with(
+        user_id=7
+    )
+    # profile_manager.gateway_client.delete_current_user.assert_awaited_once_with()
 
 
 @pytest.mark.asyncio

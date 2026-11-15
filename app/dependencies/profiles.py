@@ -3,6 +3,8 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Path, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.celery.celery_app import celery_app
+from app.clients.celery_client import CeleryClient
 from app.clients.gateway_client import GatewayClient
 from app.db.database import get_async_session
 from app.dependencies.auth import get_current_profile_id
@@ -15,6 +17,10 @@ def get_gateway_client() -> GatewayClient:
     return GatewayClient()
 
 
+def get_celery_client() -> CeleryClient:
+    return CeleryClient(celery_app=celery_app)
+
+
 def get_cache_manager(request: Request):
     return CacheManager(request.app.state.redis)
 
@@ -23,8 +29,11 @@ def get_profile_manager(
     session: AsyncSession = Depends(get_async_session),
     cache: CacheManager = Depends(get_cache_manager),
     gateway_client: GatewayClient = Depends(get_gateway_client),
+    celery_client: CeleryClient = Depends(get_celery_client),
 ) -> ProfileManager:
-    return ProfileManager(session, cache=cache, gateway_client=gateway_client)
+    return ProfileManager(
+        session, cache=cache, gateway_client=gateway_client, celery_client=celery_client
+    )
 
 
 async def get_current_profile(
