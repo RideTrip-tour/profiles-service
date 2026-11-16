@@ -7,8 +7,16 @@ def test_celery_app_name():
     assert celery_app.main == "profile"
 
 
-def test_default_queue():
-    assert celery_app.conf.task_default_queue == "profile"
+@pytest.mark.parametrize(
+    ("task_default",),
+    [
+        ("task_default_queue",),
+        ("task_default_exchange",),
+        ("task_default_routing_key",),
+    ],
+)
+def test_default_task(task_default):
+    assert getattr(celery_app.conf, task_default) == "profile"
 
 
 @pytest.mark.parametrize(

@@ -13,9 +13,9 @@ from internal_middleware.user_context import _extract_user_id
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.celery.celery_app import celery_app
-from app.clients.celery_client import CeleryClient
 from app.clients.gateway_client import GatewayClient
 from app.db.database import AsyncSessionLocal
+from app.publishers.task_publisher import TaskPublisher
 
 # from app.middlerware.context import user_claims
 from app.services.cache_manager import CacheManager
@@ -82,7 +82,7 @@ async def _get_profile_id(
         db=session,
         cache=cache,
         gateway_client=GatewayClient(),
-        celery_client=CeleryClient(celery_app=celery_app),
+        task_publisher=TaskPublisher(celery_app=celery_app),
     )
     return await profile_manager.get_profile_id(user_id=user_id)
 

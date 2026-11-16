@@ -57,7 +57,7 @@ async def test_x_user_claims_header_is_restored_into_request_state(
 
     monkeypatch.setattr(
         "app.middlerware.request_context.ProfileManager",
-        lambda db, cache, gateway_client, celery_client: StubProfileContextManager(
+        lambda db, cache, gateway_client, task_publisher: StubProfileContextManager(
             db=db,
             cache=cache,
         ),
@@ -102,7 +102,7 @@ async def test_x_user_claims_without_user_id_returns_401(client):
 async def test_profile_not_found_returns_401(client, monkeypatch, gateway_client):
     monkeypatch.setattr(
         "app.middlerware.request_context.ProfileManager",
-        lambda db, cache, gateway_client, celery_client: StubProfileContextManager(
+        lambda db, cache, gateway_client, task_publisher: StubProfileContextManager(
             db=db,
             cache=cache,
             profile_id=None,
