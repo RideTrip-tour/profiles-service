@@ -192,14 +192,14 @@ class ProfileManager:
         return profile
 
     async def delete_profile_by_user_id(self, user_id: int) -> None:
-        deleted = await crud_delete_profile_by_user_id(self.db, user_id)
-        self._raise_not_found(deleted)
-        result = await self.task_publisher.soft_delete_account(user_id=user_id)
-        logger.info(
-            "Account soft-delete task published. Task ID: %s",
-            result.id,
-        )
-        # await self.gateway_client.delete_current_user()
+        async with self.db.begin():
+            deleted = await crud_delete_profile_by_user_id(self.db, user_id)
+            self._raise_not_found(deleted)
+            result = await self.task_publisher.soft_delete_account(user_id=user_id)
+            logger.info(
+                "Account soft-delete task published. Task ID: %s",
+                result.id,
+            )
         logger.info("Profile deleted: user_id=%s", user_id)
 
     async def delete_profile_permanently_by_user_id(self, user_id: int) -> None:
