@@ -461,12 +461,14 @@ async def test_delete_profile_by_user_id_returns_none_on_success(
         fake_delete_profile_by_user_id,
     )
 
-    profile_manager.gateway_client.delete_current_user = AsyncMock()
+    profile_manager.task_publisher.soft_delete_account = AsyncMock()
 
     result = await profile_manager.delete_profile_by_user_id(7)
 
     assert result is None
-    profile_manager.gateway_client.delete_current_user.assert_awaited_once_with()
+    profile_manager.task_publisher.soft_delete_account.assert_awaited_once_with(
+        user_id=7
+    )
 
 
 @pytest.mark.asyncio
