@@ -64,6 +64,12 @@ class GatewayClient(InternalClient):
             country_id,
         )
 
+    async def check_level_exists(
+        self,
+        level_id: int,
+    ) -> None:
+        await self._check_reference_exists("/api/locations/references/levels", level_id)
+
     async def check_location_exists(
         self,
         location_id: int,
