@@ -378,9 +378,7 @@ def test_profile_settings_update_allows_partial_update():
 
 @pytest.mark.parametrize(
     ("field", "value"),
-    [
-        *[("gender", gender) for gender in Gender]
-    ],
+    [*[("gender", gender) for gender in Gender]],
 )
 def test_profile_accepts_valid_gender_and_skill(profile_schema, field, value):
     schema, data = profile_schema
