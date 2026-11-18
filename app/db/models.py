@@ -18,7 +18,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.utils.enums import Gender, SkillLevel
+from app.utils.enums import Gender
 
 PROFILE_RELATIONSHIP_CASCADE = "all, delete-orphan"
 
@@ -75,15 +75,7 @@ class Profile(Base):
         ),
         default=Gender.PREFER_NOT_TO_SAY,
     )
-    skill: Mapped[SkillLevel | None] = mapped_column(
-        Enum(
-            SkillLevel,
-            native_enum=False,
-            values_callable=lambda enum_cls: [member.value for member in enum_cls],
-        ),
-        nullable=True,
-        default=None,
-    )
+    skill: Mapped[int | None] = mapped_column(Integer)
     avatar_url: Mapped[str | None] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

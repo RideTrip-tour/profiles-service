@@ -7,7 +7,8 @@ class Gender(StrEnum):
     PREFER_NOT_TO_SAY = "Не указывать"
 
 
-class SkillLevel(StrEnum):
-    BEGINNER = "Новичок"
-    INTERMEDIATE = "Средний"
-    ADVANCED = "Продвинутый"
+# depricated 18.11.26
+# class SkillLevel(StrEnum):
+#     BEGINNER = "Новичок"
+#     INTERMEDIATE = "Средний"
+#     ADVANCED = "Продвинутый"

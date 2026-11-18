@@ -15,7 +15,7 @@ from app.schemas.profiles_schemas import (
     ProfileSettings,
     ProfileSettingsUpdate,
 )
-from app.utils.enums import Gender, SkillLevel
+from app.utils.enums import Gender
 from tests.conftest import INVALID_PROFILE_FIELDS
 
 
@@ -378,10 +378,7 @@ def test_profile_settings_update_allows_partial_update():
 
 @pytest.mark.parametrize(
     ("field", "value"),
-    [
-        *[("gender", gender) for gender in Gender],
-        *[("skill", skill) for skill in SkillLevel],
-    ],
+    [*[("gender", gender) for gender in Gender]],
 )
 def test_profile_accepts_valid_gender_and_skill(profile_schema, field, value):
     schema, data = profile_schema
@@ -410,10 +407,8 @@ def test_profile_response_accepts_gender_and_skill():
     profile = SimpleNamespace(
         **make_profile(
             gender=Gender.MALE,
-            skill=SkillLevel.BEGINNER,
         )
     )
     response = ProfileResponse.model_validate(profile)
 
     assert response.gender == Gender.MALE
-    assert response.skill == SkillLevel.BEGINNER
