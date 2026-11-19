@@ -3,13 +3,13 @@ from kombu import Exchange, Queue
 
 from config import settings
 
-celery_app = Celery(
+app = Celery(
     "profile",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
 )
 
-celery_app.conf.update(
+app.conf.update(
     task_queues=(
         Queue("profile", Exchange("profile"), routing_key="profile"),
         Queue("auth", Exchange("auth"), routing_key="auth"),

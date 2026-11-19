@@ -21,6 +21,7 @@ os.environ["DEBUG"] = "false"
 from app.clients.gateway_client import GatewayClient
 from app.db.models import ProfileDevice
 from app.dependencies.profiles import get_profile_manager
+from app.publishers.connectors import CeleryConnector
 from app.publishers.task_publisher import TaskPublisher
 
 # from app.middlerware.context import user_claims
@@ -133,9 +134,14 @@ def celery_app():
 
 
 @pytest.fixture
-def task_publisher(celery_app):
+def celery_connector(celery_app):
+    return CeleryConnector(producer=celery_app)
+
+
+@pytest.fixture
+def task_publisher(celery_connector):
     TaskPublisher._instance = None
-    publisher = TaskPublisher(celery_app)
+    publisher = TaskPublisher(connector=celery_connector)
     yield publisher
     TaskPublisher._instance = None
 

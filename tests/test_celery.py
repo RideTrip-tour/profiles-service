@@ -1,6 +1,6 @@
 import pytest
 
-from app.celery.celery_app import celery_app
+from app.celery.app import app as celery_app
 
 
 def test_celery_app_name():

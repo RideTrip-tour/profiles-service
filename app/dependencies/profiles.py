@@ -3,10 +3,10 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Path, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.celery.celery_app import celery_app
 from app.clients.gateway_client import GatewayClient
 from app.db.database import get_async_session
 from app.dependencies.auth import get_current_profile_id
+from app.publishers.dependencies import task_publisher
 from app.publishers.task_publisher import TaskPublisher
 from app.schemas.constants import MAX_VALUE_INTEGER, MIN_VALUE_INTEGER
 from app.services.cache_manager import CacheManager
@@ -18,7 +18,7 @@ def get_gateway_client() -> GatewayClient:
 
 
 def get_task_publisher() -> TaskPublisher:
-    return TaskPublisher(celery_app=celery_app)
+    return task_publisher
 
 
 def get_cache_manager(request: Request):
