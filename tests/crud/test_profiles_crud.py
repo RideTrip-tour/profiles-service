@@ -202,14 +202,19 @@ async def test_get_profile_id_by_user_id_returns_none(db, result_mock):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("function", "identifier"),
+    ("function", "identifier", "commit_expected"),
     [
-        (delete_profile_by_user_id, 7),
-        (delete_profile_by_id, 10),
+        (delete_profile_by_user_id, 7, False),
+        (delete_profile_by_id, 10, True),
     ],
 )
 async def test_delete_profile_by_identifier(
-    db, profile, function, identifier, result_mock
+    db,
+    profile,
+    function,
+    identifier,
+    commit_expected,
+    result_mock,
 ):
     profile.deleted_at = None
     profile.is_active = True
@@ -222,8 +227,12 @@ async def test_delete_profile_by_identifier(
     assert result is True
     assert profile.deleted_at is not None
     assert profile.is_active is False
+
     db.delete.assert_not_awaited()
-    db.commit.assert_awaited_once()
+    if commit_expected:
+        db.commit.assert_awaited_once()
+    else:
+        db.commit.assert_not_awaited()
 
 
 @pytest.mark.asyncio

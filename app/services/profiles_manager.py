@@ -54,6 +54,7 @@ from app.crud.profiles_crud import (
     update_profile_by_user_id as crud_update_profile_by_user_id,
 )
 from app.db.models import FavoriteLocation, ProfileSettings
+from app.publishers.task_publisher import TaskPublisher
 from app.schemas.admin_schemas import ProfileCreate as AdminProfileCreate
 from app.schemas.profiles_schemas import (
     ProfileBase,
@@ -76,10 +77,12 @@ class ProfileManager:
         db: AsyncSession,
         cache: CacheManager,
         gateway_client: GatewayClient,
+        task_publisher: TaskPublisher,
     ):
         self.db = db
         self.cache = cache
         self.gateway_client = gateway_client
+        self.task_publisher = task_publisher
 
     async def create_profile(self, user_id: int, profile_in: ProfileCreate):
         existing_profile = await crud_get_profile_by_user_id(self.db, user_id)
@@ -189,9 +192,14 @@ class ProfileManager:
         return profile
 
     async def delete_profile_by_user_id(self, user_id: int) -> None:
-        deleted = await crud_delete_profile_by_user_id(self.db, user_id)
-        self._raise_not_found(deleted)
-        await self.gateway_client.delete_current_user()
+        async with self.db.begin():
+            deleted = await crud_delete_profile_by_user_id(self.db, user_id)
+            self._raise_not_found(deleted)
+            result = await self.task_publisher.soft_delete_account(user_id=user_id)
+            logger.info(
+                "Account soft-delete task published. Task ID: %s",
+                result.message_id,
+            )
         logger.info("Profile deleted: user_id=%s", user_id)
 
     async def delete_profile_permanently_by_user_id(self, user_id: int) -> None:

@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.clients.gateway_client import GatewayClient
 from app.db.database import get_async_session
 from app.dependencies.auth import get_current_profile_id
+from app.publishers.dependencies import task_publisher
+from app.publishers.task_publisher import TaskPublisher
 from app.schemas.constants import MAX_VALUE_INTEGER, MIN_VALUE_INTEGER
 from app.services.cache_manager import CacheManager
 from app.services.profiles_manager import ProfileManager
@@ -13,6 +15,10 @@ from app.services.profiles_manager import ProfileManager
 
 def get_gateway_client() -> GatewayClient:
     return GatewayClient()
+
+
+def get_task_publisher() -> TaskPublisher:
+    return task_publisher
 
 
 def get_cache_manager(request: Request):
@@ -23,8 +29,14 @@ def get_profile_manager(
     session: AsyncSession = Depends(get_async_session),
     cache: CacheManager = Depends(get_cache_manager),
     gateway_client: GatewayClient = Depends(get_gateway_client),
+    task_publisher: TaskPublisher = Depends(get_task_publisher),
 ) -> ProfileManager:
-    return ProfileManager(session, cache=cache, gateway_client=gateway_client)
+    return ProfileManager(
+        session,
+        cache=cache,
+        gateway_client=gateway_client,
+        task_publisher=task_publisher,
+    )
 
 
 async def get_current_profile(
