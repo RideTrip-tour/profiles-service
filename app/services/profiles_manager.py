@@ -198,7 +198,7 @@ class ProfileManager:
             result = await self.task_publisher.soft_delete_account(user_id=user_id)
             logger.info(
                 "Account soft-delete task published. Task ID: %s",
-                result.id,
+                result.message_id,
             )
         logger.info("Profile deleted: user_id=%s", user_id)
 
