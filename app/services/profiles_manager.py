@@ -30,9 +30,6 @@ from app.crud.profiles_crud import (
     delete_profile_by_id as crud_delete_profile_by_id,
 )
 from app.crud.profiles_crud import (
-    delete_profile_by_user_id as crud_delete_profile_by_user_id,
-)
-from app.crud.profiles_crud import (
     delete_profile_permanently_by_user_id as crud_delete_profile_permanently_by_user_id,
 )
 from app.crud.profiles_crud import (
@@ -192,15 +189,10 @@ class ProfileManager:
         return profile
 
     async def delete_profile_by_user_id(self, user_id: int) -> None:
-        async with self.db.begin():
-            deleted = await crud_delete_profile_by_user_id(self.db, user_id)
-            self._raise_not_found(deleted)
-            result = await self.task_publisher.soft_delete_account(user_id=user_id)
-            logger.info(
-                "Account soft-delete task published. Task ID: %s",
-                result.message_id,
-            )
-        logger.info("Profile deleted: user_id=%s", user_id)
+        await self.task_publisher.delete_profile_and_account(user_id=user_id)
+        logger.info(
+            "Profile and Account soft-deleted tasks published:: user_id=%s", user_id
+        )
 
     async def delete_profile_permanently_by_user_id(self, user_id: int) -> None:
         deleted = await crud_delete_profile_permanently_by_user_id(self.db, user_id)

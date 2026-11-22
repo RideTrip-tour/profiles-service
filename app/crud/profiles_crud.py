@@ -153,13 +153,11 @@ async def delete_profile_by_user_id(db: AsyncSession, user_id: int) -> bool:
     """
     Мягкое удаление профиля по user_id.
 
-    Не выполняет commit. Управление транзакцией остаётся
-    на стороне вызывающего кода.
     Возвращает True если удален, иначе False.
     """
     profile = await _find_by_user_id(db, user_id)
 
-    return _soft_delete_profile(profile)
+    return await _soft_delete_profile_with_commit(db, profile)
 
 
 async def delete_profile_permanently_by_user_id(db: AsyncSession, user_id: int) -> bool:

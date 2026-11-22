@@ -229,10 +229,7 @@ async def test_delete_profile_by_identifier(
     assert profile.is_active is False
 
     db.delete.assert_not_awaited()
-    if commit_expected:
-        db.commit.assert_awaited_once()
-    else:
-        db.commit.assert_not_awaited()
+    db.commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio

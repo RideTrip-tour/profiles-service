@@ -7,6 +7,7 @@ app = Celery(
     "profile",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
+    include=["app.tasks.profile_tasks"],
 )
 
 app.conf.update(

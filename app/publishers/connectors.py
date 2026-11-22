@@ -21,7 +21,10 @@ class ProtocolConnector(Protocol):
         task_name: str,
         args: list | None = None,
         kwargs: dict | None = None,
+        countdown: int | None = None,
     ) -> PublishResult: ...
+
+    async def revoke(self, message_id: str) -> None: ...
 
 
 class CeleryConnector:
@@ -34,6 +37,7 @@ class CeleryConnector:
         task_name: str,
         args: list | None = None,
         kwargs: dict | None = None,
+        countdown: int | None = None,
     ) -> PublishResult:
         try:
             result = await asyncio.to_thread(
@@ -42,6 +46,7 @@ class CeleryConnector:
                 args=args or [],
                 kwargs=kwargs or {},
                 queue=queue,
+                countdown=countdown,
             )
             return PublishResult(message_id=str(result.id))
         except Exception:
@@ -49,5 +54,18 @@ class CeleryConnector:
                 "Failed to publish Celery task: %s to queue: %s",
                 task_name,
                 queue,
+            )
+            raise
+
+    async def revoke(self, message_id: str) -> None:
+        try:
+            await asyncio.to_thread(
+                self._producer.control.revoke,
+                message_id,
+            )
+        except Exception:
+            logger.exception(
+                "Failed to revoke Celery task: %s",
+                message_id,
             )
             raise
