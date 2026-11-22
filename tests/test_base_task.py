@@ -46,10 +46,13 @@ async def test_execute_success(db, session_context):
 async def test_execute_deletes_db_after_exception(session_context):
     task = FailingTask()
 
-    with patch(
-        "app.celery.base_task.AsyncSessionLocalCelery",
-        return_value=session_context,
-    ), pytest.raises(RuntimeError, match="Task failed"):
+    with (
+        patch(
+            "app.celery.base_task.AsyncSessionLocalCelery",
+            return_value=session_context,
+        ),
+        pytest.raises(RuntimeError, match="Task failed"),
+    ):
         await task._execute(10)
 
     session_context.__aenter__.assert_awaited_once()
