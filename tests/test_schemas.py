@@ -327,6 +327,7 @@ def test_activities_invalid(profile_schema, today, age):
     profile = schema(**{**data, "birth_date": birth_date})
     assert profile.birth_date == birth_date
 
+
 @pytest.mark.parametrize("age", [17, 121])
 def test_birth_date_rejects_invalid_age(profile_schema, today, age):
     schema, data = profile_schema

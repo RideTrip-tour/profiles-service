@@ -353,7 +353,10 @@ async def test_get_favorite_locations_by_user_id_returns_forbidden(
     )
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"detail": "Профиль скрыт"}
-    assert manager.calls == [("get_profile_id_or_raise", 8, True), ("get_show_profile", 8)]
+    assert manager.calls == [
+        ("get_profile_id_or_raise", 8, True),
+        ("get_show_profile", 8),
+    ]
 
 
 @pytest.mark.asyncio
