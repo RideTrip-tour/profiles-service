@@ -10,13 +10,15 @@ Activity = Annotated[
 
 
 def normalize_activities(activities: list[Activity]) -> list[str]:
-    """Нормализует значения активностей."""
-    return [activity.strip().casefold() for activity in activities]
+    """Нормализует значения активностей и отбрасывает пустые строки."""
+    return [activity.strip().casefold() for activity in activities if activity.strip()]
 
 
 def validate_activities(activities: list[Activity]) -> list[Activity]:
     """Проверяет уникальность активностей без учёта регистра и пробелов."""
     normalized_activities = normalize_activities(activities)
+    if len(normalized_activities) != len(activities):
+        raise ValueError("Activities must not be empty")
     if len(normalized_activities) != len(set(normalized_activities)):
         raise ValueError("Activities must be unique")
     return activities

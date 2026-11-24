@@ -320,6 +320,13 @@ def test_profile_fields_have_default_values(profile_schema, field, expected):
     assert getattr(profile, field) == expected
 
 
+@pytest.mark.parametrize("age", [18, 120])
+def test_activities_invalid(profile_schema, today, age):
+    schema, data = profile_schema
+    birth_date = today - relativedelta(years=age)
+    profile = schema(**{**data, "birth_date": birth_date})
+    assert profile.birth_date == birth_date
+
 @pytest.mark.parametrize("age", [17, 121])
 def test_birth_date_rejects_invalid_age(profile_schema, today, age):
     schema, data = profile_schema
@@ -417,3 +424,48 @@ def test_profile_response_accepts_gender_and_skill():
 
     assert response.gender == Gender.MALE
     assert response.skill == SkillLevel.BEGINNER
+
+
+@pytest.mark.parametrize(
+    "activities",
+    [
+        [],
+        ["Runn"],
+        ["Runn", "Cycle"],
+        [" RU ", "Cyc"],
+    ],
+)
+def test_profile_accepts_valid_activities(profile_schema, activities):
+    schema, data = profile_schema
+
+    profile = schema(**data, activities=activities)
+
+    assert profile.activities == activities
+
+
+@pytest.mark.parametrize(
+    "activities",
+    [
+        ["   "],
+        ["Run", "   "],
+    ],
+)
+def test_profile_rejects_empty_activities(profile_schema, activities):
+    schema, data = profile_schema
+
+    with pytest.raises(ValidationError, match="Activities must not be empty"):
+        schema(**data, activities=activities)
+
+
+@pytest.mark.parametrize(
+    "activities",
+    [
+        ["Runn", "runn"],
+        ["Run", " RUN "],
+    ],
+)
+def test_profile_rejects_duplicate_activities(profile_schema, activities):
+    schema, data = profile_schema
+
+    with pytest.raises(ValidationError, match="Activities must be unique"):
+        schema(**data, activities=activities)
