@@ -111,10 +111,10 @@ class ProfileManager:
         )
         return profile
 
-    async def get_profile_by_user_id(self, user_id: int):
-        profile = await crud_get_profile_by_user_id(self.db, user_id)
-        self._raise_not_found(profile)
-        return profile
+    async def get_profile_by_user_id(self, user_id: int, is_active: bool | None = None):
+        return self.get_or_raise_not_found(
+            await crud_get_profile_by_user_id(self.db, user_id, is_active=is_active)
+        )
 
     async def get_profile_by_id(self, profile_id: int):
         profile = await crud_get_profile_by_id(self.db, profile_id)
@@ -133,7 +133,9 @@ class ProfileManager:
                 detail=str(exc),
             ) from exc
 
-    async def get_profile_id(self, user_id: int) -> int | None:
+    async def get_profile_id(
+        self, user_id: int, is_active: bool | None = None
+    ) -> int | None:
         key = self.cache.profile_keys.get_profile_id(user_id=user_id)
         cached_profile_id = await self.cache.get(key)
         if cached_profile_id is not None:
@@ -144,7 +146,9 @@ class ProfileManager:
             )
             return convert_value_to_int(cached_profile_id)
         logger.debug("Profile ID cache miss: user_id=%s", user_id)
-        profile_id = await self._get_profile_id_from_db(user_id=user_id)
+        profile_id = await self._get_profile_id_from_db(
+            user_id=user_id, is_active=is_active
+        )
         logger.debug(
             "Profile ID loaded from database: user_id=%s profile_id=%s",
             user_id,
@@ -155,12 +159,19 @@ class ProfileManager:
             logger.debug("Profile ID cached: profile_id=%s", profile_id)
         return profile_id
 
-    async def get_profile_id_or_raise(self, user_id: int) -> int:
-        profile_id = await self.get_profile_id(user_id)
-        return self.get_or_raise_not_found(profile_id)
+    async def get_profile_id_or_raise(
+        self, user_id: int, is_active: bool | None = None
+    ) -> int:
+        return self.get_or_raise_not_found(
+            await self.get_profile_id(user_id, is_active=is_active)
+        )
 
-    async def _get_profile_id_from_db(self, user_id: int) -> int | None:
-        return await crud_get_profile_id_by_user_id(db=self.db, user_id=user_id)
+    async def _get_profile_id_from_db(
+        self, user_id: int, is_active: bool | None = None
+    ) -> int | None:
+        return await crud_get_profile_id_by_user_id(
+            db=self.db, user_id=user_id, is_active=is_active
+        )
 
     async def update_profile_by_user_id(self, user_id: int, payload: ProfileUpdate):
         await self._validate_city_country(payload)

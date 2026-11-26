@@ -45,7 +45,9 @@ async def get_my_profile(
     request: Request,
     manager: ProfileManagerDep,
 ):
-    return await manager.get_profile_by_user_id(get_current_user_id(request))
+    return await manager.get_profile_by_user_id(
+        get_current_user_id(request), is_active=True
+    )
 
 
 @router.get(
@@ -76,11 +78,11 @@ async def get_favorite_locations_by_user_id(
     manager: ProfileManagerDep,
 ):
     show_profile = await manager.get_show_profile(
-        await manager.get_profile_id_or_raise(user_id)
+        await manager.get_profile_id_or_raise(user_id, is_active=True)
     )
     if not can_view_profile(request, user_id, show_profile):
         return ProfileHiddenResponse(detail="Профиль скрыт")
-    profile = await manager.get_profile_by_user_id(user_id)
+    profile = await manager.get_profile_by_user_id(user_id, is_active=True)
     return FavoriteLocationsResponse(location_ids=profile.favorites)
 
 
@@ -91,12 +93,11 @@ async def get_profile_by_id(
     manager: ProfileManagerDep,
 ):
     show_profile = await manager.get_show_profile(
-        await manager.get_profile_id_or_raise(user_id)
+        await manager.get_profile_id_or_raise(user_id, is_active=True)
     )
     if not can_view_profile(request, user_id, show_profile):
         return ProfileHiddenResponse(detail="Профиль скрыт")
-    profile = await manager.get_profile_by_user_id(user_id)
-    return profile
+    return await manager.get_profile_by_user_id(user_id, is_active=True)
 
 
 @router.patch("/me", response_model=ProfileResponse)

@@ -53,8 +53,8 @@ class StubProfileManager:
         self.calls.append(("create_profile", user_id, payload.model_dump()))
         return self.profile
 
-    async def get_profile_by_user_id(self, user_id):
-        self.calls.append(("get_profile_by_user_id", user_id))
+    async def get_profile_by_user_id(self, user_id, is_active):
+        self.calls.append(("get_profile_by_user_id", user_id, is_active))
 
         profile_data = {
             **self.profile,
@@ -129,8 +129,8 @@ class StubProfileManager:
 
         return self.profile_settings
 
-    async def get_profile_id_or_raise(self, user_id):
-        self.calls.append(("get_profile_id_or_raise", user_id))
+    async def get_profile_id_or_raise(self, user_id, is_active):
+        self.calls.append(("get_profile_id_or_raise", user_id, is_active))
         return 8
 
     async def get_show_profile(self, profile_id):
@@ -199,7 +199,7 @@ async def test_get_profile_by_id_returns_forbidden_for_another_user(
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"detail": "Профиль скрыт"}
     assert manager.calls == [
-        ("get_profile_id_or_raise", 8),
+        ("get_profile_id_or_raise", 8, True),
         ("get_show_profile", 8),
     ]
 
@@ -225,9 +225,9 @@ async def test_get_profile_by_id_returns_profile_for_visible_profile(
     assert response.json()["id"] == 1
     assert response.json()["user_id"] == 8
     assert manager.calls == [
-        ("get_profile_id_or_raise", 8),
+        ("get_profile_id_or_raise", 8, True),
         ("get_show_profile", 8),
-        ("get_profile_by_user_id", 8),
+        ("get_profile_by_user_id", 8, True),
     ]
 
 
@@ -242,7 +242,7 @@ async def test_get_my_profile_uses_current_user_id(
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["id"] == 1
-    assert manager.calls == [("get_profile_by_user_id", 7)]
+    assert manager.calls == [("get_profile_by_user_id", 7, True)]
 
 
 @pytest.mark.asyncio
@@ -308,9 +308,9 @@ async def test_delete_profile_by_id_returns_no_content_for_owner(
             "/api/profile/7/favorite-locations",
             "app.dependencies.auth.get_current_user_id",
             [
-                ("get_profile_id_or_raise", 7),
+                ("get_profile_id_or_raise", 7, True),
                 ("get_show_profile", 8),
-                ("get_profile_by_user_id", 7),
+                ("get_profile_by_user_id", 7, True),
             ],
         ),
     ],
@@ -353,7 +353,10 @@ async def test_get_favorite_locations_by_user_id_returns_forbidden(
     )
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"detail": "Профиль скрыт"}
-    assert manager.calls == [("get_profile_id_or_raise", 8), ("get_show_profile", 8)]
+    assert manager.calls == [
+        ("get_profile_id_or_raise", 8, True),
+        ("get_show_profile", 8),
+    ]
 
 
 @pytest.mark.asyncio
@@ -389,9 +392,9 @@ async def test_get_favorite_locations_by_user_id_returns_locations_for_visible_p
         ]
     }
     assert manager.calls == [
-        ("get_profile_id_or_raise", 8),
+        ("get_profile_id_or_raise", 8, True),
         ("get_show_profile", 8),
-        ("get_profile_by_user_id", 8),
+        ("get_profile_by_user_id", 8, True),
     ]
 
 
