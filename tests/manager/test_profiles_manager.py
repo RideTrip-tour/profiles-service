@@ -263,7 +263,7 @@ async def test_create_profile_raises_not_found_for_missing_location(
 
 @pytest.mark.asyncio
 async def test_get_profile_by_user_id_raises_not_found(monkeypatch, profile_manager):
-    async def fake_get_profile_by_user_id(db, user_id):
+    async def fake_get_profile_by_user_id(db, user_id, is_active):
         return None
 
     monkeypatch.setattr(
@@ -686,7 +686,7 @@ async def test_get_profile_id_loads_from_db_and_caches(
     profile_manager,
     monkeypatch,
 ):
-    async def mock_get_profile_id_by_user_id(user_id, db):
+    async def mock_get_profile_id_by_user_id(user_id, db, is_active):
         assert user_id == 7
         return 1
 
@@ -695,7 +695,7 @@ async def test_get_profile_id_loads_from_db_and_caches(
         mock_get_profile_id_by_user_id,
     )
 
-    result = await profile_manager.get_profile_id(user_id=7)
+    result = await profile_manager.get_profile_id(user_id=7, is_active=True)
 
     assert result == 1
     assert redis_client.data["profile_service:profile_id:7"] == 1
@@ -707,7 +707,7 @@ async def test_get_profile_id_returns_none_when_profile_not_found(
     profile_manager,
     monkeypatch,
 ):
-    async def mock_get_profile_id_by_user_id(user_id, db):
+    async def mock_get_profile_id_by_user_id(user_id, db, is_active):
         return None
 
     monkeypatch.setattr(

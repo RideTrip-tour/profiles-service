@@ -20,7 +20,7 @@ from app.schemas.constants import (
     PATTERN_NAME,
 )
 from app.schemas.validators.activeties import Activity, validate_activities
-from app.schemas.validators.phone_number import validate_phone_number
+from app.schemas.validators.phone_number import normalize_phone_number
 from app.utils.enums import Gender
 
 PositiveInt32 = Annotated[StrictInt, Field(ge=MIN_VALUE_INTEGER, le=MAX_VALUE_INTEGER)]
@@ -77,7 +77,7 @@ class ProfileBase(BaseModel):
     @classmethod
     def validate_phone_number(cls, phone_number: str | None) -> str | None:
         if phone_number is not None:
-            return validate_phone_number(phone_number)
+            return normalize_phone_number(phone_number)
         return None
 
     @field_validator("birth_date")

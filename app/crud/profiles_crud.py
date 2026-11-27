@@ -97,8 +97,14 @@ async def _find_by_user_id(
     ).scalar_one_or_none()
 
 
-async def _find_id_by_user_id(db: AsyncSession, user_id: int):
-    result = await db.execute(select(Profile.id).where(Profile.user_id == user_id))
+async def _find_id_by_user_id(
+    db: AsyncSession, user_id: int, is_active: bool | None = None
+):
+
+    conditions = [Profile.user_id == user_id]
+    if is_active is not None:
+        conditions.append(Profile.is_active.is_(is_active))
+    result = await db.execute(select(Profile.id).where(*conditions))
     return result.scalar_one_or_none()
 
 
@@ -117,12 +123,16 @@ async def admin_create_profile(
     return await _create_new_profile(db, profile_data)
 
 
-async def get_profile_by_user_id(db: AsyncSession, user_id: int) -> Profile | None:
-    return await _find_by_user_id(db, user_id)
+async def get_profile_by_user_id(
+    db: AsyncSession, user_id: int, is_active: bool | None = None
+) -> Profile | None:
+    return await _find_by_user_id(db, user_id, is_active=is_active)
 
 
-async def get_profile_id_by_user_id(db: AsyncSession, user_id: int) -> int | None:
-    return await _find_id_by_user_id(db, user_id)
+async def get_profile_id_by_user_id(
+    db: AsyncSession, user_id: int, is_active: bool | None = None
+) -> int | None:
+    return await _find_id_by_user_id(db, user_id, is_active=is_active)
 
 
 async def get_profile_by_id(db: AsyncSession, profile_id: int) -> Profile | None:
