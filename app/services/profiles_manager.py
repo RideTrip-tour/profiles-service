@@ -84,7 +84,7 @@ class ProfileManager:
     async def create_profile(self, user_id: int, profile_in: ProfileCreate):
         existing_profile = await crud_get_profile_by_user_id(self.db, user_id)
         self._raise_conflict_if_exists(existing_profile)
-        await self._validate_city_country(profile_in)
+        await self._validate_city_country_level(profile_in)
         profile = await crud_create_profile(self.db, user_id, profile_in)
         logger.info(
             "Profile created: user_id=%s profile_id=%s",
@@ -102,7 +102,7 @@ class ProfileManager:
             self.db, profile_in.user_id
         )
         self._raise_conflict_if_exists(existing_profile)
-        await self._validate_city_country(profile_in)
+        await self._validate_city_country_level(profile_in)
         profile = await crud_admin_create_profile(self.db, profile_in)
         logger.info(
             "Profile created by admin: user_id=%s profile_id=%s",
@@ -121,12 +121,14 @@ class ProfileManager:
         self._raise_not_found(profile)
         return profile
 
-    async def _validate_city_country(self, payload: ProfileBase) -> None:
+    async def _validate_city_country_level(self, payload: ProfileBase) -> None:
         try:
             if payload.country_id is not None:
                 await self.gateway_client.check_country_exists(payload.country_id)
             if payload.city_id is not None:
                 await self.gateway_client.check_city_exists(payload.city_id)
+            if payload.skill is not None:
+                await self.gateway_client.check_level_exists(payload.skill)
         except ValueError as exc:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -174,7 +176,7 @@ class ProfileManager:
         )
 
     async def update_profile_by_user_id(self, user_id: int, payload: ProfileUpdate):
-        await self._validate_city_country(payload)
+        await self._validate_city_country_level(payload)
         profile = self.get_or_raise_not_found(
             await crud_update_profile_by_user_id(self.db, user_id, payload)
         )
@@ -193,7 +195,7 @@ class ProfileManager:
         return profile
 
     async def update_profile_by_id(self, profile_id: int, payload: ProfileUpdate):
-        await self._validate_city_country(payload)
+        await self._validate_city_country_level(payload)
         profile = await crud_update_profile_by_id(self.db, profile_id, payload)
         self._raise_not_found(profile)
         logger.info("Profile updated: profile_id=%s", profile_id)

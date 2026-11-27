@@ -21,7 +21,7 @@ from app.schemas.constants import (
 )
 from app.schemas.validators.activeties import Activity, validate_activities
 from app.schemas.validators.phone_number import normalize_phone_number
-from app.utils.enums import Gender, SkillLevel
+from app.utils.enums import Gender
 
 PositiveInt32 = Annotated[StrictInt, Field(ge=MIN_VALUE_INTEGER, le=MAX_VALUE_INTEGER)]
 
@@ -63,7 +63,7 @@ class ProfileBase(BaseModel):
         pattern=PATTERN_CITIZENSHIP,
     )
     gender: Gender = Field(default=Gender.PREFER_NOT_TO_SAY)
-    skill: SkillLevel | None = None
+    skill: PositiveInt32 | None = None
 
     # Времено отключено по просьбе тестеров. До подключения бакета
     # avatar_url: Optional[str] = None
