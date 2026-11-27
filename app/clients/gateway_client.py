@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from internal_client import InternalClient
 from internal_middleware.context import request_id_var, user_claims
@@ -20,6 +21,9 @@ class GatewayClient(InternalClient):
             timeout=10.0,
         )
 
+    def _get_request_id(self) -> str:
+        return request_id_var.get() or str(uuid.uuid4())
+
     def _get_user_context(self) -> str:
         return self._build_user_context(user_claims.get())
 
@@ -33,7 +37,7 @@ class GatewayClient(InternalClient):
             path=path,
             user_context=self._get_user_context(),
             params={"id": reference_id},
-            request_id=request_id_var.get(),
+            request_id=self._get_request_id(),
         )
 
         items = response.json()["items"]
@@ -72,7 +76,7 @@ class GatewayClient(InternalClient):
             method="GET",
             user_context=self._get_user_context(),
             path=f"/api/locations/{location_id}",
-            request_id=request_id_var.get(),
+            request_id=self._get_request_id(),
         )
 
     async def delete_current_user(self) -> None:
@@ -80,5 +84,5 @@ class GatewayClient(InternalClient):
             method="DELETE",
             user_context=self._get_user_context(),
             path="/api/users/me",
-            request_id=request_id_var.get(),
+            request_id=self._get_request_id(),
         )

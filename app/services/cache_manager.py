@@ -11,7 +11,10 @@ class CacheManager:
         self.device_keys = DeviceCacheKeys()
 
     async def get(self, key: str) -> str | None:
-        return await self.redis_client.get(key)
+        value = await self.redis_client.get(key)
+        if isinstance(value, bytes):
+            return value.decode("utf-8")
+        return value
 
     async def set(
         self,
