@@ -6,12 +6,12 @@ from app.celery.base_task import AsyncDatabaseTask
 
 
 class DummyTask(AsyncDatabaseTask):
-    async def run_async(self, value: int):
-        return value, self.db
+    async def run_async(self, db, value: int):
+        return value, db
 
 
 class FailingTask(AsyncDatabaseTask):
-    async def run_async(self, value: int):
+    async def run_async(self, db, value: int):
         raise RuntimeError("Task failed")
 
 
@@ -37,13 +37,15 @@ async def test_execute_success(db, session_context):
 
     session_factory.assert_called_once_with()
     session_context.__aenter__.assert_awaited_once()
-    session_context.__aexit__.assert_awaited_once_with(None, None, None)
-
-    assert not hasattr(task, "db")
+    session_context.__aexit__.assert_awaited_once_with(
+        None,
+        None,
+        None,
+    )
 
 
 @pytest.mark.asyncio
-async def test_execute_deletes_db_after_exception(session_context):
+async def test_execute_exception_closes_session(session_context):
     task = FailingTask()
 
     with (
@@ -64,29 +66,29 @@ async def test_execute_deletes_db_after_exception(session_context):
     assert str(exc_value) == "Task failed"
     assert traceback is not None
 
-    assert not hasattr(task, "db")
 
-
-def test_call_runs_async_task(db, session_context):
+def test_run_executes_async_task(db, session_context):
     task = DummyTask()
 
     with patch(
         "app.celery.base_task.AsyncSessionLocalCelery",
         return_value=session_context,
     ):
-        result = task(10)
+        result = task.run(10)
 
     assert result == (10, db)
 
     session_context.__aenter__.assert_awaited_once()
-    session_context.__aexit__.assert_awaited_once_with(None, None, None)
-
-    assert not hasattr(task, "db")
+    session_context.__aexit__.assert_awaited_once_with(
+        None,
+        None,
+        None,
+    )
 
 
 @pytest.mark.asyncio
-async def test_run_async_not_implemented():
+async def test_run_async_not_implemented(db):
     task = AsyncDatabaseTask()
 
     with pytest.raises(NotImplementedError):
-        await task.run_async()
+        await task.run_async(db)

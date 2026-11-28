@@ -14,7 +14,7 @@ async def test_run_async(db):
         "app.tasks.profile_tasks.delete_profile_by_user_id",
         new_callable=AsyncMock,
     ) as delete_mock:
-        result = await task.run_async(user_id=10)
+        result = await task.run_async(db=db, user_id=10)
 
     assert result is None
 
