@@ -14,13 +14,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clients.gateway_client import GatewayClient
 from app.db.database import AsyncSessionLocal
+from app.publishers.dependencies import task_publisher
 
 # from app.middlerware.context import user_claims
 from app.services.cache_manager import CacheManager
 from app.services.devices_manager import DeviceManager
 from app.services.profiles_manager import ProfileManager
-
-# from app.utils.converters import convert_value_to_int
+from app.utils.converters import convert_value_to_int
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,10 @@ async def _get_profile_id(
     session: AsyncSession, cache: CacheManager, user_id: int
 ) -> int | None:
     profile_manager = ProfileManager(
-        db=session, cache=cache, gateway_client=GatewayClient()
+        db=session,
+        cache=cache,
+        gateway_client=GatewayClient(),
+        task_publisher=task_publisher,
     )
     return await profile_manager.get_profile_id(user_id=user_id)
 
@@ -145,7 +148,7 @@ async def profile_context_middleware(request: Request, call_next):
     if _is_profile_context_excluded(request.url.path):
         return await call_next(request)
     if getattr(request.state, "user", None):
-        user_id = _extract_user_id(request.state.user)
+        user_id = convert_value_to_int(_extract_user_id(request.state.user))
         if user_id is None:
             return _unauthorized_response()
         async with AsyncSessionLocal() as session:

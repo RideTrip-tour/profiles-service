@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
+from celery import Celery
 from httpx import ASGITransport, AsyncClient
 from internal_middleware import user_claims
 
@@ -17,10 +18,11 @@ if str(ROOT) not in sys.path:
 
 os.environ["DEBUG"] = "false"
 
-
 from app.clients.gateway_client import GatewayClient
 from app.db.models import ProfileDevice
 from app.dependencies.profiles import get_profile_manager
+from app.publishers.connectors import CeleryConnector
+from app.publishers.task_publisher import TaskPublisher
 
 # from app.middlerware.context import user_claims
 from app.services.cache_manager import CacheManager
@@ -127,6 +129,24 @@ def redis_client():
 
 
 @pytest.fixture
+def celery_app():
+    return MagicMock(spec=Celery)
+
+
+@pytest.fixture
+def celery_connector(celery_app):
+    return CeleryConnector(producer=celery_app)
+
+
+@pytest.fixture
+def task_publisher(celery_connector):
+    TaskPublisher._instance = None
+    publisher = TaskPublisher(connector=celery_connector)
+    yield publisher
+    TaskPublisher._instance = None
+
+
+@pytest.fixture
 def today():
     return datetime.now(UTC).date()
 
@@ -151,9 +171,14 @@ def device_manager(cache_manager, db):
 
 
 @pytest.fixture
-def profile_manager(cache_manager, gateway_client, db):
+def profile_manager(cache_manager, gateway_client, db, task_publisher):
 
-    return ProfileManager(db=db, cache=cache_manager, gateway_client=gateway_client)
+    return ProfileManager(
+        db=db,
+        cache=cache_manager,
+        gateway_client=gateway_client,
+        task_publisher=task_publisher,
+    )
 
 
 @pytest.fixture

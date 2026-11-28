@@ -10,7 +10,10 @@ from app.schemas.admin_schemas import ProfileCreate as AdminProfileCreate
 from app.schemas.profiles_schemas import ProfileCreate, ProfileUpdate
 
 
-async def _soft_delete_profile(db: AsyncSession, profile: Profile | None) -> bool:
+def _soft_delete_profile(profile: Profile | None) -> bool:
+    """
+    Мягкое удаление без коммита
+    """
     if profile is None:
         return False
 
@@ -19,7 +22,24 @@ async def _soft_delete_profile(db: AsyncSession, profile: Profile | None) -> boo
 
     profile.soft_delete()
 
+    return True
+
+
+async def _soft_delete_profile_with_commit(
+    db: AsyncSession, profile: Profile | None
+) -> bool:
+    """
+    Мягкое удаление с коммитом.
+    """
+    if profile is None:
+        return False
+
+    if not profile.is_active and profile.deleted_at is not None:
+        return True
+
+    profile.soft_delete()
     await db.commit()
+
     return True
 
 
@@ -142,11 +162,12 @@ async def get_profile_by_id(db: AsyncSession, profile_id: int) -> Profile | None
 async def delete_profile_by_user_id(db: AsyncSession, user_id: int) -> bool:
     """
     Мягкое удаление профиля по user_id.
+
     Возвращает True если удален, иначе False.
     """
     profile = await _find_by_user_id(db, user_id)
 
-    return await _soft_delete_profile(db, profile)
+    return await _soft_delete_profile_with_commit(db, profile)
 
 
 async def delete_profile_permanently_by_user_id(db: AsyncSession, user_id: int) -> bool:
@@ -161,11 +182,12 @@ async def delete_profile_permanently_by_user_id(db: AsyncSession, user_id: int) 
 async def delete_profile_by_id(db: AsyncSession, profile_id: int) -> bool:
     """
     Мягкое удаление профиля по id.
+
     Возвращает True если удален, иначе False.
     """
     profile = await _find_by_id(db, profile_id)
 
-    return await _soft_delete_profile(db, profile)
+    return await _soft_delete_profile_with_commit(db, profile)
 
 
 async def update_profile_by_user_id(
