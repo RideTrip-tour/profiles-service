@@ -1,10 +1,4 @@
-import asyncio
-import logging
-
-from celery import Celery
-from celery.result import AsyncResult
-
-logger = logging.getLogger(__name__)
+from app.publishers.connectors import ProtocolConnector, PublishResult
 
 
 class TaskPublisher:
@@ -15,35 +9,11 @@ class TaskPublisher:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, celery_app: Celery) -> None:
-        if not hasattr(self, "_celery_app"):
-            self._celery_app = celery_app
+    def __init__(self, connector: ProtocolConnector) -> None:
+        self._connector = connector
 
-    async def _publish_task(
-        self,
-        queue: str,
-        task_name: str,
-        args: list | None = None,
-        kwargs: dict | None = None,
-    ) -> AsyncResult:
-        try:
-            return await asyncio.to_thread(
-                self._celery_app.send_task,
-                task_name,
-                args=args or [],
-                kwargs=kwargs or {},
-                queue=queue,
-            )
-        except Exception:
-            logger.exception(
-                "Failed to publish Celery task: %s to queue: %s",
-                task_name,
-                queue,
-            )
-            raise
-
-    async def soft_delete_account(self, user_id: int) -> AsyncResult:
-        return await self._publish_task(
+    async def soft_delete_account(self, user_id: int) -> PublishResult:
+        return await self._connector.publish(
             queue="auth",
             task_name="auth.soft_delete_account",
             kwargs={"user_id": user_id},
